@@ -1,0 +1,120 @@
+{
+  "entities": {
+    "SchoolReport": {
+      "title": "SchoolReport",
+      "description": "របាយការណ៍បូកសរុបការងារអប់រំសាលាបឋមសិក្សា (MoEYS Primary School Report)",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique report identifier"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner user UID"
+        },
+        "userEmail": {
+          "type": "string",
+          "description": "Email of the report author"
+        },
+        "schoolName": {
+          "type": "string",
+          "description": "ឈ្មោះសាលារៀន"
+        },
+        "academicYear": {
+          "type": "string",
+          "description": "ឆ្នាំសិក្សា"
+        },
+        "reportData": {
+          "type": "object",
+          "description": "ទិន្នន័យរបាយការណ៍លម្អិតទាំងមូលតាមរចនាសម្ព័ន្ធក្រសួង"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "submitted", "reviewed", "approved"],
+          "description": "ស្ថានភាពឯកសារ"
+        },
+        "khmerLunarDate": {
+          "type": "string",
+          "description": "កាលបរិច្ឆេទចន្ទគតិខ្មែរស្វ័យប្រវត្តិ"
+        },
+        "khmerSolarDate": {
+          "type": "string",
+          "description": "កាលបរិច្ឆេទសុរិយគតិខ្មែរស្វ័យប្រវត្តិ"
+        },
+        "autoSaveTimestamp": {
+          "type": "number",
+          "description": "ពេលវេលារក្សាទុកស្វ័យប្រវត្តិចុងក្រោយ"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "កាលបរិច្ឆេទបង្កើតឯកសារ"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "កាលបរិច្ឆេទកែប្រែចុងក្រោយ"
+        }
+      },
+      "required": ["id", "userId", "schoolName", "status"]
+    },
+    "ReportSubmission": {
+      "title": "ReportSubmission",
+      "description": "ឯកសារបញ្ជូនរបាយការណ៍ទៅកម្រង ឬការិយាល័យអប់រំស្រុក",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Submission ID"
+        },
+        "reportId": {
+          "type": "string",
+          "description": "Referenced School Report ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Sender User UID"
+        },
+        "senderName": {
+          "type": "string",
+          "description": "ឈ្មោះអ្នករៀបចំ និងបញ្ជូន"
+        },
+        "senderEmail": {
+          "type": "string",
+          "description": "អ៊ីមែលអ្នកបញ្ជូន"
+        },
+        "schoolName": {
+          "type": "string",
+          "description": "ឈ្មោះសាលា"
+        },
+        "recipientOffice": {
+          "type": "string",
+          "description": "ស្ថាប័នទទួល (កម្រងសាលា ឬការិយាល័យអប់រំ យុវជន និងកីឡាស្រុក)"
+        },
+        "submissionNotes": {
+          "type": "string",
+          "description": "ចំណាំ ឬលិខិតភ្ជាប់មកជាមួយ"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["submitted", "acknowledged", "accepted", "returned"],
+          "description": "ស្ថានភាពនៃការបញ្ជូន"
+        },
+        "submittedAt": {
+          "type": "string",
+          "description": "កាលបរិច្ឆេទបញ្ជូន"
+        }
+      },
+      "required": ["id", "reportId", "userId", "schoolName", "recipientOffice", "status"]
+    }
+  },
+  "firestore": {
+    "/school_reports/{reportId}": {
+      "schema": "SchoolReport",
+      "description": "ឯកសាររបាយការណ៍សាលារៀនដែលបានរក្សាទុក និងកែសម្រួលស្វ័យប្រវត្តិ"
+    },
+    "/report_submissions/{submissionId}": {
+      "schema": "ReportSubmission",
+      "description": "ប្រវត្តិការបញ្ជូនឯកសាររបាយការណ៍ផ្លូវការ"
+    }
+  }
+}

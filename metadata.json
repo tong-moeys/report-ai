@@ -1,0 +1,6 @@
+{
+  "name": "ជំនួយការរៀបចំរបាយការណ៍សាលា (School Report Assistant)",
+  "description": "ប្រព័ន្ធជំនួយការរៀបចំ គណនា និងវិភាគរបាយការណ៍បូកសរុបលទ្ធផលការងារដំណាច់ឆ្នាំសាលាបឋមសិក្សា ជាមួយ AI - Primary School Annual Report & Evaluation Assistant with AI",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
