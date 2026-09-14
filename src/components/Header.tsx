@@ -213,7 +213,7 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             <FileText className="w-4 h-4" />
-            <span>ទម្រង់បោះពុម្ព & ទាញយក (ផ្នែក A, B, Master)</span>
+            <span>ទម្រង់បោះពុម្ពផ្លូវការ (MoEYS Form)</span>
           </button>
 
           <button
