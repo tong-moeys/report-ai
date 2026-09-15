@@ -1,366 +1,246 @@
-export interface SchoolInfo {
-  kingdomHeader: string;
-  motto: string;
-  districtOffice: string;
-  cluster: string;
+export interface SchoolMeta {
   schoolName: string;
-  reportTitle: string;
+  clusterOrDistrict: string;
+  province: string;
   academicYear: string;
-  locationType: 'urban' | 'normal' | 'remote' | 'abnormal';
-  partnerNGOs: string;
-  roomsTotal: number;
-  roomsTeaching: number;
-  roomsNonTeaching: number;
-  reportDateKhmerLunar?: string;
-  reportDateKhmerSolar?: string;
-  autoDateEnabled?: boolean;
-  customReportDate?: string;
+  directorName: string;
+  preparedByName: string;
+  reportDate: string;
 }
 
-export interface StudentGradeRow {
-  grade: number;
+export interface GradeClassData {
+  classes: number;
   total: number;
   female: number;
-  change: string;
-  transferredIn: string;
-  transferredOut: string;
 }
 
-export interface StudentSection {
-  overall: {
-    total: number;
-    female: number;
-    change: number;
-    transferredIn: number;
-    transferredOut: number;
-  };
-  byGrade: StudentGradeRow[];
-  note: string;
-  classesByGrade: {
-    g1: number;
-    g2: number;
-    g3: number;
-    g4: number;
-    g5: number;
-    g6: number;
-    totalClasses: number;
-    multigradeClasses: number;
-  };
+export interface Table1SchoolRooms {
+  schoolName: string;
+  buildings: number;
+  teachingRooms: number; // ប.បរ
+  otherRooms: number;    // ផ្សេងៗ
+  g1: GradeClassData;
+  g2: GradeClassData;
+  g3: GradeClassData;
+  g4: GradeClassData;
+  g5: GradeClassData;
+  g6: GradeClassData;
 }
 
-export interface StaffCategory {
+export interface GenderCount {
   total: number;
   female: number;
-  change: number;
-  dropouts: number;
-  retired: number;
 }
 
-export interface StaffSection {
-  overallStaff: StaffCategory;
-  singleClassTeachers: StaffCategory;
-  doubleClassTeachers: StaffCategory;
-  multigradeTeachers: StaffCategory;
-  principalTeaching: StaffCategory;
-  otherStaff: {
-    total: number;
-    female: number;
-    description: string;
-  };
+export interface Table1Staff {
+  schoolName: string;
+  directorDeputy: GenderCount;    // នាយក+រង (មិនបង្រៀន)
+  officeAdmin: GenderCount;       // ទីចាត់ការ (មិនបង្រៀន)
+  pureTeaching: GenderCount;      // បរ.សុទ្ធ
+  multiGrade: GenderCount;        // គូប
+  deputyTeaching: GenderCount;    // នាយករងបង្រៀន
+  contractTeaching: GenderCount;  // កិ .ស
+  twoShifts: GenderCount;         // ក្នុងនោះ ២ពេល
+  assistTeaching: GenderCount;    // ជួយប.រ
 }
 
-export interface FinanceItemRow {
+export interface Table2RowInput {
   id: string;
-  description: string;   // បរិយាយ
-  quantity: string;      // បរិមាណ
-  totalAmount: string;   // ទឹកប្រាក់សរុប
-  budgetSource: string;  // ប្រភពថវិកា
-  deficit: string;       // កង្វះថវិកា
+  gradeLabel: string;
+  // User enters or derived:
+  passedAvgTotal: number;  // 3
+  passedAvgFemale: number; // 5
+  failedAvgTotal: number;  // 7
+  failedAvgFemale: number; // 9
+  failedSubTotal: number;  // 11 (មធ្យមភាគ 4.00-4.99)
+  failedSubFemale: number; // 13
+  dropoutTotal: number;    // 15
+  dropoutFemale: number;   // 17
+  // Custom override for semester 1 if not formula-based:
+  customSem1Total?: number;
+  customSem1Female?: number;
 }
 
-export interface FinanceSection {
-  periodNote?: string;   // (ចាប់ពីខែ តុលា ដល់ ខែ កញ្ញា)
-  tableRows: FinanceItemRow[];
-  totalExpenditureRiel?: string;
-  totalDeficitRiel?: string;
-  newConstruction?: {
-    buildings: number;
-    rooms: number;
-    costRiel: string;
-    sources: string;
-  };
-  repair?: {
-    buildings: number;
-    rooms: number;
-    costRiel: string;
-    sources: string;
-  };
-  furnitureAndImprovement?: {
-    costRiel: string;
-    sources: string;
-  };
-  officeSupplies?: {
-    costRiel: string;
-    sources: string;
-  };
+export interface Table3RowInput {
+  id: string;
+  gradeLabel: string;
+  testedTotal: number;    // 1
+  testedFemale: number;   // 2
+  passedTotal: number;    // 3
+  passedFemale: number;   // 5
 }
 
-export interface LibrarySection {
-  activeRegular: number;
-  suboptimal: number;
-  none: number;
+export interface Table4RowInput {
+  id: string;
+  gradeLabel: string;
+  passedAvgTotal: number;   // 5
+  passedAvgFemale: number;  // 7
+  passedRetestTotal: number; // 9
+  passedRetestFemale: number; // 11
+  repeatersTotal: number;   // 17
+  repeatersFemale: number;  // 19
+  dropoutsTotal: number;    // 21
+  dropoutsFemale: number;   // 23
 }
 
-export interface AcademicGradeRow {
-  grade: number; // 1 to 6
-  // Col A = 5 + 6 + 7 (សិស្សដំណាច់ឆ្នាំ)
-  yearEndTotal: number;
-  yearEndFemale: number;
-  // Col B = 5 + 6 (សិស្សចុងឆ្នាំ)
-  finalStudentsTotal: number;
-  finalStudentsFemale: number;
-  // Col 3 (ជាប់មធ្យមភាគ)
-  passedAverageTotal: number;
-  passedAverageFemale: number;
-  // Col 4 (ធ្វើតេស្ដជាប់)
-  passedRetestTotal: number;
-  passedRetestFemale: number;
-  // Col 5 = 3 + 4 (ជាប់ចុងឆ្នាំ)
-  finalPassedTotal: number;
-  finalPassedFemale: number;
-  // Col 6 (សិស្សត្រួតថ្នាក់)
-  repeaterTotal: number;
-  repeaterFemale: number;
-  // Col 7 (សិស្សបោះបង់)
-  dropoutTotal: number;
-  dropoutFemale: number;
+export type Table4Period = 'ឆមាស១' | 'ឆមាស២' | 'ដំណាច់ឆ្នាំ';
+
+export interface Table4HeaderConfig {
+  period: Table4Period;
+  isSwapped: boolean;
+  col1Title: string;
+  col2Title: string;
 }
 
-export interface AcademicPercentageRow {
-  grade: string; // '1'..'6' or 'សរុប'
-  passedBeforeTestPct: string; // Col 1
-  passedRetestPct: string;     // Col 2
-  finalPassedPct: string;      // Col 3 = 1 + 2
-  repeaterPct: string;         // Col 4
-  dropoutPct: string;          // Col 5
-  notes: string;               // Col 6
+// ==========================================
+// ផ្នែក B (ស្ថិតិឯកទេស & សង្គម)
+// ==========================================
+
+// 1. បុគ្គលិក & បណ្ណាល័យ (Staff & Library)
+export interface LibraryData {
+  totalBooks: number;
+  storyBooks: number;
+  textBooks: number;
+  teacherGuides: number;
+  readersMonthly: GenderCount;
+  borrowingMonthly: number;
+  hasReadingTimetable: boolean;
+  librarianName: string;
 }
 
-export interface PostTestAcademicRow {
-  grade: string; // 'ថ្នាក់ទី ១' ... 'ថ្នាក់ទី ៦', 'សរុប'
-  sem1Total: number;          // 1=3+21 (ឆមាសទី១ សរុប)
-  sem1Female: number;         // 2=4+23 (ឆមាសទី១ ស្រី)
-  yearEndTotal: number;       // 3=13+17 (សិស្សចុងឆ្នាំ សរុប)
-  yearEndFemale: number;      // 4=15+19 (សិស្សចុងឆ្នាំ ស្រី)
-  passedAvgTotal: number;     // 5 (សិស្សជាប់មធ្យមភាគ សរុប)
-  passedAvgTotalPct: string;  // 6=5x10/1
-  passedAvgFemale: number;    // 7 (សិស្សជាប់មធ្យមភាគ ស្រី)
-  passedAvgFemalePct: string; // 8=7x10/2
-  passedRetestTotal: number;  // 9 (សិស្សធ្វើតេស្តជាប់ សរុប)
-  passedRetestTotalPct: string; // 10=9x10/1
-  passedRetestFemale: number; // 11 (សិស្សធ្វើតេស្តជាប់ ស្រី)
-  passedRetestFemalePct: string; // 12=11x10/2
-  finalPassedTotal: number;   // 13=5+9 (សរុបជាប់ចុងឆ្នាំ សរុប)
-  finalPassedTotalPct: string;// 14=13x10/1
-  finalPassedFemale: number;  // 15=7+11 (សរុបជាប់ចុងឆ្នាំ ស្រី)
-  finalPassedFemalePct: string; // 16=15x10/2
-  repeaterTotal: number;      // 17 (សិស្សត្រួតថ្នាក់ សរុប)
-  repeaterTotalPct: string;   // 18=17x10/1
-  repeaterFemale: number;     // 19 (សិស្សត្រួតថ្នាក់ ស្រី)
-  repeaterFemalePct: string;  // 20=19x10/2
-  dropoutTotal: number;       // 21 (សិស្សបោះបង់ សរុប)
-  dropoutTotalPct: string;    // 22=21x10/1
-  dropoutFemale: number;      // 23 (សិស្សបោះបង់ ស្រី)
-  dropoutFemalePct: string;   // 24=23x10/2
+// 2. ទឹកស្អាត & បង្គន់អនាម័យ (Water & Sanitation)
+export interface WaterSanitationData {
+  waterSource: string; // e.g. អណ្តូងស្នប់ / ទឹកម៉ាស៊ីន / ធុងចម្រោះ
+  hasSafeDrinkingWater: boolean;
+  handwashingStations: number;
+  hasSoapAvailable: boolean;
+  totalLatrines: number;
+  teacherLatrines: number;
+  boysLatrines: number;
+  girlsLatrines: number;
+  functioningLatrines: number;
+  wasteDisposalMethod: string; // ឡដុត / ជីកកប់ / សេវាដឹកជញ្ជូន
+  hasGreenSchoolCert: boolean;
 }
 
-export interface TeachingEvaluationRow {
-  grade: number;
-  goodTeachers: number;
-  mediumTeachers: number;
-  weakTeachers: number;
-  khmerPct: number;
-  mathPct: number;
-  socialPct: number;
-  sciencePct: number;
-  englishPct: number;
-}
-
-export interface GirlsCounselingSection {
-  rows: Array<{
-    id: number;
-    description: string;
-    g4Total: number;
-    g4Pct: string;
-    g5Total: number;
-    g5Pct: string;
-    g6Total: number;
-    g6Pct: string;
-    other: string;
-  }>;
-  activities: string;
-  challenges: string;
-  requests: string;
-}
-
-export interface LifeSkillsProgramRow {
-  name: string;
-  schoolsCount: number;
-  schoolsPct: string;
-  studentsTotal: number;
-  studentsTotalPct: string;
-  studentsFemale: number;
-  studentsFemalePct: string;
-  notes: string;
-}
-
-export interface LifeSkillsSection {
-  programs: LifeSkillsProgramRow[];
-  activities: string;
-  challenges: string;
-  requests: string;
-}
-
+// 3. សុខភាព, សិស្សក្រីក្រ & ពិការ (Health, Equity & Inclusion)
 export interface DewormingRound {
-  roundName: string;
-  total: number;
-  female: number;
-  totalPct: string;
-  femalePct: string;
-  other: string;
+  target: number;
+  receivedTotal: number;
+  receivedFemale: number;
 }
 
-export interface SanitationWaterItem {
-  facility: string;
-  schoolsCount: number;
-  totalCount: number;
-  totalPct: string;
-  workingCount: number;
-  workingPct: string;
-  brokenCount: number;
-  brokenPct: string;
+export interface HealthSocialData {
+  dewormingRound1: DewormingRound;
+  dewormingRound2: DewormingRound;
+  idPoor1: GenderCount;
+  idPoor2: GenderCount;
+  scholarships: GenderCount;
+  disabledPhysical: GenderCount;
+  disabledVisual: GenderCount;
+  disabledHearing: GenderCount;
+  disabledIntellectual: GenderCount;
 }
 
-export interface SchoolHealthSection {
-  deworming: {
-    rounds: DewormingRound[];
-    activities: string;
-    challenges: string;
-    requests: string;
-  };
-  sanitation: {
-    facilities: SanitationWaterItem[];
-    activities: string;
-    challenges: string;
-    requests: string;
-  };
-  nutrition: {
-    rations: {
-      schoolsCount: number;
-      schoolsPct: string;
-      studentsTotal: number;
-      studentsFemale: number;
-    };
-    breakfast: {
-      schoolsCount: number;
-      schoolsPct: string;
-      studentsTotal: number;
-      studentsFemale: number;
-    };
-    activities: string;
-    challenges: string;
-    requests: string;
-  };
+// 4. ហិរញ្ញវត្ថុ / ថវិកាដំណើរការសាលា (PB School Budget)
+export interface SchoolFinanceData {
+  budgetPlanPB: number;
+  budgetReceivedPB: number;
+  budgetExpendedPB: number;
+  materialsExpended: number;
+  repairsExpended: number;
+  hygieneExpended: number;
 }
 
-export interface ExtracurricularSection {
-  socialWork: {
-    content: string;
-    result: string;
-  };
-  agriculture: {
-    content: string;
-    result: string;
-  };
-  studyTour: {
-    content: string;
-    result: string;
-  };
-  sports: {
-    competitionsCount: number;
-    schoolLevelClasses: number;
-    clusterTimes: number;
-    districtTimes: number;
-    provinceTimes: number;
-    content: string;
-    result: string;
-  };
-  arts: {
-    performancesCount: number;
-    schoolLevelClasses: number;
-    clusterTimes: number;
-    districtTimes: number;
-    provinceTimes: number;
-    content: string;
-    result: string;
-  };
+// ==========================================
+// ផ្នែក IV ដល់ VII (របាយការណ៍សង្ខេប & អធិការកិច្ច)
+// ==========================================
+export interface ManagementInspectionData {
+  plcMeetingsCount: number;
+  classObservationsCount: number;
+  internalInspectionVisits: number;
+  summary: string;
 }
 
-export interface InspectionLevelItem {
-  levelName: string;
-  schoolsCount: number;
-  classesCount: number;
+export interface CommunityData {
+  sscMeetingsCount: number;
+  communityContributionAmount: number;
+  partnerNGOs: string;
+  communitySummary: string;
 }
 
-export interface InspectionSection {
-  ministry: InspectionLevelItem;
-  province: InspectionLevelItem;
-  district: InspectionLevelItem;
-  cluster: InspectionLevelItem;
-  total: InspectionLevelItem;
-  guidanceFeedback: string;
+export interface ChallengesData {
+  challenges: string;
+  solutions: string;
 }
 
-export interface CommunityWorkSection {
-  cooperationDetails: string;
-  result: string;
-}
-
-export interface VacationPrepSection {
-  tasks: string[];
-  scholarshipListStatus: string;
-}
-
-export interface ConclusionSection {
-  generalSummary: string;
+export interface ConclusionData {
+  executiveSummary: string;
   keyAchievements: string[];
   challengesToResolve: string;
+  requestsToDistrict: string;
 }
 
-export interface FullSchoolReport {
-  info: SchoolInfo;
-  students: StudentSection;
-  staff: StaffSection;
-  finances: FinanceSection;
-  library: LibrarySection;
-  academicResults: AcademicGradeRow[];
-  academicPercentages: AcademicPercentageRow[];
-  postTestAcademicResults?: PostTestAcademicRow[];
-  teachingEvaluation: {
-    rows: TeachingEvaluationRow[];
-    criteriaGood: string;
-    criteriaMedium: string;
-    criteriaWeak: string;
-  };
-  girlsCounseling: GirlsCounselingSection;
-  lifeSkills: LifeSkillsSection;
-  health: SchoolHealthSection;
-  extracurricular: ExtracurricularSection;
-  inspection: InspectionSection;
-  communityWork: CommunityWorkSection;
-  vacationPrep: VacationPrepSection;
-  conclusion: ConclusionSection;
-  aiExecutiveSummary?: string;
-  aiRecommendations?: string[];
-  lastUpdated?: string;
+export interface MasterReportNarrative {
+  management: ManagementInspectionData;
+  community: CommunityData;
+  challenges: ChallengesData;
+  conclusion: ConclusionData;
 }
+
+// ==========================================
+// បញ្ជីរាយនាមបុគ្គលិក (Staff Nominal Roll - Page 7)
+// ==========================================
+export interface StaffMember {
+  id: string;
+  no: number;
+  name: string;
+  gender: 'ស' | 'ប' | 'ស្រី' | 'ប្រុស';
+  qualification: string; // ក្របខ័ណ្ឌ ឧ. គ្រូបឋម, គ្រូមត្តេយ្យ
+  educationLevel: string; // កម្រិតវប្បធម៌ ឧ. ថ្នាក់ទី១២, ស.ទុតិយភូមិ, ស.បឋមភូមិ, ស.បច្ចេកទេស
+  roleOrClass: string; // មុខងារ/ថ្នាក់ទទួលបន្ទុក ឧ. នាយិកាសាលា, 1A, 5A, បណ្ណារក្ស, កសិកម្ម
+  studentsTotal?: number;
+  studentsFemale?: number;
+  shift: string; // វេន ឧ. ព្រឹក, ល្ងាច
+  phone: string; // លេខទូរស័ព្ទ
+  category: 'admin' | 'teaching' | 'kindergarten';
+}
+
+// ==========================================
+// ចំណាត់ថ្នាក់តាមថ្នាក់ (Class Gradebook & Ranking - Pages 12-21)
+// ==========================================
+export interface StudentScoreRow {
+  id: string;
+  no: number;
+  name: string;
+  gender: 'ស' | 'ប' | 'ស្រី' | 'ប្រុស';
+  dob: string;
+  pob: string;
+  sem1Avg: number;
+  sem1Rank: number;
+  sem2Avg: number;
+  sem2Rank: number;
+  yearAvg: number;
+  yearRank: number;
+  gradeLetter: 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+  isDropped?: boolean;
+  absentPermission: number;
+  absentNoPermission: number;
+  absentTotal: number;
+}
+
+export interface ClassGradebook {
+  gradeId: string; // '1A', '2A', '2B', '3A', '3B', '4A', '4B', '5A', '5B', '6A'
+  gradeName: string; // 'ថ្នាក់ទី 1A', ...
+  teacherName: string; // 'ជែម សុភក្តិ', ...
+  students: StudentScoreRow[];
+}
+
+export type MainAppSection =
+  | 'part_a'
+  | 'part_b'
+  | 'staff_nominal'
+  | 'class_rankings'
+  | 'master_report'
+  | 'full_booklet';
+

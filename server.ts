@@ -19,9 +19,81 @@ function getGenAI(): GoogleGenAI | null {
     return null;
   }
   if (!genAIClient) {
-    genAIClient = new GoogleGenAI({ apiKey });
+    genAIClient = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        },
+      },
+    });
   }
   return genAIClient;
+}
+
+// Helper to reliably extract normalized metrics from reportData
+function extractReportMetrics(data: any) {
+  const report = data.report || data;
+  const info = report.info || {};
+  const students = report.students?.overall || { total: 252, female: 119 };
+  const totalStudents = Number(students.total) || 252;
+  const femaleStudents = Number(students.female) || 119;
+
+  const academic = Array.isArray(report.academicResults) ? report.academicResults : [];
+  const totalPassed = academic.length > 0
+    ? academic.reduce((sum: number, r: any) => sum + (Number(r.finalPassedTotal) || 0), 0)
+    : 242;
+  const femalePassed = academic.length > 0
+    ? academic.reduce((sum: number, r: any) => sum + (Number(r.finalPassedFemale) || 0), 0)
+    : 116;
+  const totalDropouts = academic.length > 0
+    ? academic.reduce((sum: number, r: any) => sum + (Number(r.dropoutTotal) || 0), 0)
+    : 4;
+  const totalRepeaters = academic.length > 0
+    ? academic.reduce((sum: number, r: any) => sum + (Number(r.repeaterTotal) || 0), 0)
+    : 6;
+
+  const passRate = totalStudents > 0 ? ((totalPassed / totalStudents) * 100).toFixed(1) : '96.0';
+  const femalePassRate = femaleStudents > 0 ? ((femalePassed / femaleStudents) * 100).toFixed(1) : '97.5';
+  const dropoutRate = totalStudents > 0 ? ((totalDropouts / totalStudents) * 100).toFixed(1) : '1.6';
+
+  const staff = report.staff?.overallStaff || { total: 17, female: 13 };
+  const goodTeachers = report.teachingEvaluation?.rows?.reduce((acc: number, r: any) => acc + (Number(r.goodTeachers) || 0), 0) || 10;
+
+  const dewormingRounds = report.health?.deworming?.rounds || [];
+  const dewormingTotal = dewormingRounds.reduce((acc: number, r: any) => acc + (Number(r.total) || 0), 0) || 245;
+
+  return {
+    report,
+    schoolName: info.schoolName || 'សាលាបឋមសិក្សារោគ',
+    academicYear: info.academicYear || '២០២៥-២០២៦',
+    district: info.districtOffice || 'ការិយាល័យអប់រំ យុវជន និងកីឡា ស្រុកស្រីស្នំ',
+    cluster: info.cluster || 'កម្រងស្ពានស្រែង',
+    locationType: info.locationType || 'normal',
+    partnerNGOs: info.partnerNGOs || 'អង្គការទស្សនៈពិភពលោក (WVSI), អង្គការសាលាបៃតង',
+    totalStudents,
+    femaleStudents,
+    totalPassed,
+    femalePassed,
+    passRate,
+    femalePassRate,
+    totalDropouts,
+    dropoutRate,
+    totalRepeaters,
+    totalStaff: Number(staff.total) || 17,
+    femaleStaff: Number(staff.female) || 13,
+    goodTeachers,
+    dewormingTotal,
+    currentConclusion: report.conclusion || {},
+    challenges: [
+      report.girlsCounseling?.challenges,
+      report.lifeSkills?.challenges,
+      report.health?.deworming?.challenges,
+      report.health?.sanitation?.challenges,
+      report.health?.nutrition?.challenges,
+      report.communityWork?.result,
+    ].filter(Boolean),
+  };
 }
 
 // Health check endpoint
@@ -33,40 +105,177 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// AI Executive Summary Generator for 'Conclusion' Section
+app.post('/api/ai/executive-summary', async (req, res) => {
+  const metrics = extractReportMetrics(req.body);
+  const { style = 'official' } = req.body;
+
+  const buildFallbackResponse = () => {
+    const fallbackSummary = `ឆ្លងកាត់ការអនុវត្តផែនការប្រតិបត្តិប្រចាំឆ្នាំសិក្សា ${metrics.academicYear} កន្លងមកនេះ ${metrics.schoolName} ចំណុះ${metrics.cluster} នៃ${metrics.district} សម្រេចបាននូវលទ្ធផលគួរជាទីមោទនៈ ស្របតាមគោលនយោបាយកំណែទម្រង់វិស័យអប់រំរបស់ក្រសួងអប់រំ យុវជន និងកីឡា។
+
+ទិដ្ឋភាពទូទៅនៃស្ថិតិសិស្ស និងលទ្ធផលសិក្សា៖ សាលាមានសិស្សសរុបចំនួន ${metrics.totalStudents} នាក់ (ស្រី ${metrics.femaleStudents} នាក់)។ ជាលទ្ធផលចុងឆ្នាំ សិស្សដែលបានប្រឡងជាប់ឡើងថ្នាក់សរុបមានចំនួន ${metrics.totalPassed} នាក់ ស្មើនឹង ${metrics.passRate}% (សិស្សស្រីជាប់ ${metrics.femalePassed} នាក់ ស្មើនឹង ${metrics.femalePassRate}%)។ អត្រាសិស្សបោះបង់ការសិក្សាត្រូវបានកាត់បន្ថយមកនៅត្រឹម ${metrics.totalDropouts} នាក់ (${metrics.dropoutRate}%) ដែលភាគច្រើនបណ្តាលមកពីកត្តាជីវភាព និងការចំណាកស្រុករបស់អាណាព្យាបាល។
+
+ទិដ្ឋភាពគរុកោសល្យ និងសុខភាពសិក្សា៖ គណៈគ្រប់គ្រង និងលោកគ្រូអ្នកគ្រូចំនួន ${metrics.totalStaff} នាក់ (ស្រី ${metrics.femaleStaff} នាក់) បានបំពេញភារកិច្ចបង្រៀនដោយការទទួលខុសត្រូវខ្ពស់ ដោយក្នុងនោះគ្រូបង្រៀនកម្រិតល្អមានចំនួន ${metrics.goodTeachers} នាក់។ សាលាបានអនុវត្តកម្មវិធីកែលម្អការអាននិងគណិតវិទ្យាថ្នាក់ដំបូង ព្រមទាំងកម្មវិធីសុខភាពសិក្សា និងការទម្លាក់ព្រូនបានចំនួន ${metrics.dewormingTotal} នាក់ ស្របតាមស្តង់ដាសាលារៀនកុមារមេត្រី។
+
+កិច្ចសហការ និងការចូលរួមរបស់សហគមន៍៖ សាលាទទួលបានការគាំទ្រយ៉ាងសកម្មពីគណៈកម្មការទ្រទ្រង់សាលា អាជ្ញាធរដែនដី និងដៃគូអភិវឌ្ឍន៍ (${metrics.partnerNGOs}) ក្នុងការថែទាំហេដ្ឋារចនាសម្ព័ន្ធ និងការលើកកម្ពស់បរិស្ថានសិក្សាស្អាតបៃតង។ ជារួម គណៈគ្រប់គ្រងសាលានឹងបន្តពង្រឹងគុណភាពអប់រំ ទប់ស្កាត់ការបោះបង់ និងត្រៀមលក្ខណៈសម្បត្តិយ៉ាងពេញលេញសម្រាប់ឆ្នាំសិក្សាបន្ទាប់។`;
+
+    const fallbackAchievements = [
+      `សម្រេចបានអត្រាសិស្សជាប់ឡើងថ្នាក់ចុងឆ្នាំសរុប ${metrics.passRate}% (សិស្សស្រី ${metrics.femalePassRate}%) លើសពីគោលដៅកំណត់។`,
+      `បុគ្គលិកអប់រំ និងលោកគ្រូអ្នកគ្រូអនុវត្តការបង្រៀន និងរៀនតាមកម្មវិធីសិក្សាបានពេញលេញ ១០០% ដោយគ្មានការរអាក់រអួល។`,
+      `ការអនុវត្តកម្មវិធីសុខភាពសិក្សា ការទម្លាក់ព្រូន និងអនាម័យមាត់ធ្មេញសម្រេចបានលទ្ធផលល្អប្រសើរលើសពី ៩៥%។`,
+      `ពង្រឹងកិច្ចសហការយ៉ាងស្អិតរមួតជាមួយគណៈកម្មការទ្រទ្រង់សាលា និងអង្គការដៃគូ (${metrics.partnerNGOs})។`
+    ];
+
+    const fallbackChallenges = `ទោះបីជាសម្រេចបានលទ្ធផលល្អយ៉ាងណាក្តី សាលានៅជួបប្រទះបញ្ហាប្រឈមមួយចំនួនរួមមាន៖ សិស្សបោះបង់ការសិក្សាចំនួន ${metrics.totalDropouts} នាក់ដោយសារការធ្វើចំណាកស្រុកតាមឪពុកម្តាយ, តម្រូវការជួសជុលអណ្តូងទឹកប្រើប្រាស់ និងបន្ទប់អនាម័យបន្ថែម, ព្រមទាំងតម្រូវការបំប៉នវិធីសាស្ត្របង្រៀនភាសាអង់គ្លេសកម្រិតបឋមសិក្សា។ សាលាស្នើសុំការគាំទ្រពីការិយាល័យអប់រំស្រុក និងសហគមន៍ដើម្បីដោះស្រាយក្នុងឆ្នាំសិក្សាថ្មី។`;
+
+    return {
+      success: true,
+      isFallback: true,
+      executiveSummary: fallbackSummary,
+      keyAchievements: fallbackAchievements,
+      challengesToResolve: fallbackChallenges,
+      metrics: {
+        totalStudents: metrics.totalStudents,
+        totalPassed: metrics.totalPassed,
+        passRate: metrics.passRate,
+        totalDropouts: metrics.totalDropouts,
+        schoolName: metrics.schoolName,
+        academicYear: metrics.academicYear,
+      }
+    };
+  };
+
+  try {
+    const ai = getGenAI();
+    if (!ai) {
+      return res.json(buildFallbackResponse());
+    }
+
+    const prompt = `អ្នកជាអ្នកជំនាញជាន់ខ្ពស់ផ្នែកអប់រំបឋមសិក្សា និងការតាក់តែងរបាយការណ៍រដ្ឋបាលផ្លូវការ នៃក្រសួងអប់រំ យុវជន និងកីឡា (MoEYS) កម្ពុជា។
+ចូរពិនិត្យទិន្នន័យជាក់ស្តែងនៃរបាយការណ៍សាលារៀនខាងក្រោម ហើយតាក់តែង "សេចក្តីសង្ខេបប្រតិបត្តិផ្លូវការ (Professional Executive Summary)" ប្រកបដោយក្បួនខ្នាតរដ្ឋបាលអប់រំខ្ពស់ សម្រាប់បញ្ចូលដោយផ្ទាល់ទៅក្នុងផ្នែក "IV-សន្និដ្ឋាន" (Conclusion) នៃរបាយការណ៍បូកសរុបលទ្ធផលការងារដំណាច់ឆ្នាំ។
+
+ទិន្នន័យសាលារៀន៖
+- ឈ្មោះសាលា៖ ${metrics.schoolName}
+- កម្រងសាលា៖ ${metrics.cluster}
+- ការិយាល័យអប់រំ៖ ${metrics.district}
+- ឆ្នាំសិក្សា៖ ${metrics.academicYear}
+- សិស្សសរុប៖ ${metrics.totalStudents} នាក់ (ស្រី ${metrics.femaleStudents} នាក់)
+- សិស្សប្រឡងជាប់ឡើងថ្នាក់៖ ${metrics.totalPassed} នាក់ (ស្រី ${metrics.femalePassed} នាក់) ស្មើនឹង ${metrics.passRate}%
+- សិស្សបោះបង់ការសិក្សា៖ ${metrics.totalDropouts} នាក់ (ស្មើនឹង ${metrics.dropoutRate}%)
+- សិស្សត្រួតថ្នាក់៖ ${metrics.totalRepeaters} នាក់
+- បុគ្គលិកអប់រំសរុប៖ ${metrics.totalStaff} នាក់ (ស្រី ${metrics.femaleStaff} នាក់)
+- គ្រូបង្រៀនកម្រិតល្អ៖ ${metrics.goodTeachers} នាក់
+- ការទម្លាក់ព្រូន៖ ${metrics.dewormingTotal} នាក់
+- អង្គការដៃគូ៖ ${metrics.partnerNGOs}
+- បញ្ហាប្រឈមដែលបានកត់ត្រា៖ ${metrics.challenges.join('; ') || 'ការចំណាកស្រុក និងកង្វះសម្ភារៈឧបទេស'}
+
+រចនាបថដែលបានជ្រើសរើស៖ ${style === 'concise' ? 'ខ្លីខ្លឹម ផ្តោតលើចំណុចស្នូល' : 'ពិស្តារ លម្អិតគ្រប់ជ្រុងជ្រោយ បែបរដ្ឋបាលក្រសួង MoEYS'}
+
+សូមរៀបចំចម្លើយត្រឡប់មកវិញជាទម្រង់ JSON object សុទ្ធ (Valid JSON string) តែមួយគត់៖
+{
+  "executiveSummary": "សេចក្តីសង្ខេបប្រតិបត្តិជាកថាខណ្ឌពិស្តារ ៣ ទៅ ៤ កថាខណ្ឌ សរសេរជាភាសាខ្មែរផ្លូវការ បញ្ជាក់តួលេខជាក់ស្តែង វាយតម្លៃសមិទ្ធផលរួម ការគ្រប់គ្រង គរុកោសល្យ និងការប្តេជ្ញាចិត្ត",
+  "keyAchievements": [
+    "សមិទ្ធផលសំខាន់ទី ១ ដោយមានបញ្ជាក់លេខភាគរយឬចំនួនជាក់ស្តែង",
+    "សមិទ្ធផលសំខាន់ទី ២",
+    "សមិទ្ធផលសំខាន់ទី ៣",
+    "សមិទ្ធផលសំខាន់ទី ៤"
+  ],
+  "challengesToResolve": "កថាខណ្ឌបញ្ជាក់ពីបញ្ហាប្រឈមអាទិភាពដែលត្រូវបន្តដោះស្រាយ និងសំណូមពរទៅថ្នាក់លើ"
+}`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.8-flash',
+      contents: prompt,
+    });
+
+    let rawText = response.text || '';
+    rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+
+    try {
+      const parsed = JSON.parse(rawText);
+      return res.json({
+        success: true,
+        isFallback: false,
+        executiveSummary: parsed.executiveSummary || parsed.summary || rawText,
+        keyAchievements: Array.isArray(parsed.keyAchievements) ? parsed.keyAchievements : [],
+        challengesToResolve: parsed.challengesToResolve || '',
+        metrics: {
+          totalStudents: metrics.totalStudents,
+          totalPassed: metrics.totalPassed,
+          passRate: metrics.passRate,
+          totalDropouts: metrics.totalDropouts,
+          schoolName: metrics.schoolName,
+          academicYear: metrics.academicYear,
+        }
+      });
+    } catch {
+      return res.json({
+        success: true,
+        isFallback: false,
+        executiveSummary: rawText,
+        keyAchievements: [
+          `សម្រេចបានអត្រាសិស្សជាប់ចុងឆ្នាំ ${metrics.passRate}% លើសិស្សសរុប ${metrics.totalStudents} នាក់។`,
+          `បុគ្គលិកអប់រំ និងគ្រូបង្រៀនបំពេញការងារយ៉ាងសកម្ម និងម៉ឺងម៉ាត់។`,
+          `អនុវត្តកម្មវិធីសុខភាពសិក្សា និងការទម្លាក់ព្រូនបានជោគជ័យ។`
+        ],
+        challengesToResolve: `បន្តកាត់បន្ថយអត្រាសិស្សបោះបង់ការសិក្សា និងជួសជុលហេដ្ឋារចនាសម្ព័ន្ធទឹកស្អាត។`,
+        metrics: {
+          totalStudents: metrics.totalStudents,
+          totalPassed: metrics.totalPassed,
+          passRate: metrics.passRate,
+          totalDropouts: metrics.totalDropouts,
+          schoolName: metrics.schoolName,
+          academicYear: metrics.academicYear,
+        }
+      });
+    }
+  } catch (error: any) {
+    console.warn('Gemini API call encountered error, providing calculated administrative fallback:', error.message);
+    return res.json(buildFallbackResponse());
+  }
+});
+
 // AI Report Analysis & Executive Synthesis
 app.post('/api/ai/analyze', async (req, res) => {
   try {
-    const reportData = req.body;
+    const metrics = extractReportMetrics(req.body);
+    const reportData = metrics.report;
     const ai = getGenAI();
 
     if (!ai) {
       // Graceful fallback with analytical insights computed from data
-      const totalStudents = reportData.students?.overall?.total || 252;
-      const totalPassed = reportData.academicResults?.reduce((acc: number, r: any) => acc + (r.finalPassedTotal || 0), 0) || 242;
-      const totalDropouts = reportData.academicResults?.reduce((acc: number, r: any) => acc + (r.dropoutTotal || 0), 0) || 4;
-      const passRate = totalStudents ? ((totalPassed / totalStudents) * 100).toFixed(1) : '98.4';
+      const passRate = metrics.passRate;
+      const totalPassed = metrics.totalPassed;
+      const totalStudents = metrics.totalStudents;
+      const totalDropouts = metrics.totalDropouts;
+
+      const summaryText = `របាយការណ៍បូកសរុបលទ្ធផលការងារដំណាច់ឆ្នាំ ផ្នែកបឋមសិក្សា ឆ្នាំសិក្សា ${metrics.academicYear} របស់ ${metrics.schoolName}៖\n- អត្រាសិស្សជាប់ចុងឆ្នាំសរុបសម្រេចបាន ${passRate}% (${totalPassed} នាក់) លើសិស្សសរុប ${totalStudents} នាក់។\n- អត្រាសិស្សបោះបង់ការសិក្សាសរុប ${totalDropouts} នាក់ ភាគច្រើនបណ្តាលមកពីការចំណាកស្រុករបស់អាណាព្យាបាល។\n- ការអនុវត្តកម្មវិធីសិក្សា និងការងារអនាម័យ-សុខភាពសិក្សាសម្រេចបានតាមផែនការកំណត់។`;
+
+      const fullAnalysis = `${summaryText}\n\nចំណុចខ្លាំងសម្រេចបាន៖\n- អត្រាសិស្សជាប់ចុងឆ្នាំខ្ពស់ (${passRate}%) នៅគ្រប់កម្រិតថ្នាក់\n- បុគ្គលិកអប់រំ និងលោកគ្រូអ្នកគ្រូមានការប្តេជ្ញាចិត្តខ្ពស់ក្នុងការបង្រៀន និងអនុវត្តកម្មវិធីសិក្សា\n- មានកិច្ចសហការល្អជាមួយអង្គការដៃគូ និងសហគមន៍\n- ការងារអនាម័យមាត់ធ្មេញ និងការទម្លាក់ព្រូនអនុវត្តបានលើសពី ៩៥%\n\nចំណុចខ្វះខាត និងបញ្ហាប្រឈម៖\n- មានសិស្សបោះបង់ការសិក្សាចំនួន ${totalDropouts} នាក់ ដោយសារការចំណាកស្រុក\n- អណ្តូងទឹកប្រើប្រាស់ខូច បង្កការលំបាកក្នុងការស្រោចស្រព និងអនាម័យ\n\nសេចក្តីសន្និដ្ឋាន៖\nជារួម សាលាបឋមសិក្សា ${metrics.schoolName} បានខិតខំប្រឹងប្រែងសម្រេចបាននូវលទ្ធផលគួរជាទីមោទនៈក្នុងឆ្នាំសិក្សា ${metrics.academicYear}។`;
 
       return res.json({
         success: true,
         isFallback: true,
-        summary: `របាយការណ៍បូកសរុបលទ្ធផលការងារដំណាច់ឆ្នាំ ផ្នែកបឋមសិក្សា ឆ្នាំសិក្សា ${reportData.info?.academicYear || '២០២៥-២០២៦'} របស់ ${reportData.info?.schoolName || 'សាលារៀន'}៖\n- អត្រាសិស្សជាប់ចុងឆ្នាំសរុបសម្រេចបាន ${passRate}% (${totalPassed} នាក់) លើសិស្សសរុប ${totalStudents} នាក់។\n- អត្រាសិស្សបោះបង់ការសិក្សាសរុប ${totalDropouts} នាក់ ភាគច្រើនបណ្តាលមកពីការចំណាកស្រុករបស់អាណាព្យាបាល។\n- ការអនុវត្តកម្មវិធីសិក្សា និងការងារអនាម័យ-សុខភាពសិក្សាសម្រេចបានតាមផែនការកំណត់។`,
+        analysis: fullAnalysis,
+        summary: summaryText,
         strengths: [
-          'អត្រាសិស្សជាប់ចុងឆ្នាំខ្ពស់ (លើសពី ៩៥%) នៅគ្រប់កម្រិតថ្នាក់',
+          `អត្រាសិស្សជាប់ចុងឆ្នាំខ្ពស់ (${passRate}%) នៅគ្រប់កម្រិតថ្នាក់`,
           'បុគ្គលិកអប់រំ និងលោកគ្រូអ្នកគ្រូមានការប្តេជ្ញាចិត្តខ្ពស់ក្នុងការបង្រៀន និងអនុវត្តកម្មវិធីសិក្សា',
           'មានកិច្ចសហការល្អជាមួយអង្គការដៃគូ និងសហគមន៍ក្នុងការកែលម្អហេដ្ឋារចនាសម្ព័ន្ធ',
           'ការងារអនាម័យមាត់ធ្មេញ និងការទម្លាក់ព្រូនអនុវត្តបានលើសពី ៩៥%',
         ],
         concerns: [
-          'មានសិស្សបោះបង់ការសិក្សាចំនួន ៤ នាក់ នៅថ្នាក់ទី៤ និងទី៦ ដោយសារការចំណាកស្រុក',
+          `មានសិស្សបោះបង់ការសិក្សាចំនួន ${totalDropouts} នាក់ ដោយសារការចំណាកស្រុក`,
           'អណ្តូងទឹកប្រើប្រាស់ខូចចំនួន ១ បង្កការលំបាកក្នុងការស្រោចស្រព និងអនាម័យ',
-          'ការអនុវត្តកម្មវិធីភាសាអង់គ្លេសនៅកម្រិតបឋមនៅមានកម្រិតទាប (៦០% ដល់ ៨៥%)',
+          'ការអនុវត្តកម្មវិធីភាសាអង់គ្លេសនៅកម្រិតបឋមនៅមានកម្រិតទាប',
         ],
-        conclusions: `ជារួម សាលាបឋមសិក្សា ${reportData.info?.schoolName || 'រោគ'} បានខិតខំប្រឹងប្រែងសម្រេចបាននូវលទ្ធផលគួរជាទីមោទនៈ។ ដើម្បីលើកកម្ពស់គុណភាពអប់រំឱ្យកាន់តែប្រសើរ សាលាត្រូវការការគាំទ្របន្ថែមលើសម្ភារៈឧបទេស ការជួសជុលប្រភពទឹកស្អាត និងការទប់ស្កាត់ការបោះបង់ការសិក្សា។`,
+        conclusions: `ជារួម សាលាបឋមសិក្សា ${metrics.schoolName} បានខិតខំប្រឹងប្រែងសម្រេចបាននូវលទ្ធផលគួរជាទីមោទនៈ។ ដើម្បីលើកកម្ពស់គុណភាពអប់រំឱ្យកាន់តែប្រសើរ សាលាត្រូវការការគាំទ្របន្ថែមលើសម្ភារៈឧបទេស ការជួសជុលប្រភពទឹកស្អាត និងការទប់ស្កាត់ការបោះបង់ការសិក្សា។`,
       });
     }
 
     const prompt = `អ្នកជាអ្នកជំនាញជាន់ខ្ពស់ផ្នែកអប់រំ និងរៀបចំរបាយការណ៍បូកសរុបលទ្ធផលការងារដំណាច់ឆ្នាំ នៃក្រសួងអប់រំ យុវជន និងកីឡា (MoEYS) កម្ពុជា។
 ចូរវិភាគទិន្នន័យរបាយការណ៍សាលារៀនខាងក្រោម ហើយបង្កើតការវិភាគសង្ខេបផ្លូវការជាភាសាខ្មែរ ដោយរៀបចំជា JSON ដែលមាន field:
+- "analysis": អត្ថបទវិភាគសំយោគពេញលេញជាកថាខណ្ឌ (រួមបញ្ចូលសេចក្តីសង្ខេប ចំណុចខ្លាំង ចំណុចខ្វះខាត និងសន្និដ្ឋាន)
 - "summary": សេចក្តីសង្ខេបលទ្ធផលការងារជាកថាខណ្ឌខ្លីៗច្បាស់លាស់ (រៀបរាប់ពីអត្រាជាប់ អត្រាបោះបង់ ការអនុវត្តកម្មវិធីសិក្សា)
 - "strengths": ចំណុចខ្លាំងនិងលទ្ធផលសម្រេចបាន (array of 3-5 strings)
 - "concerns": ចំណុចខ្វះខាតឬបញ្ហាប្រឈមដែលត្រូវកែលម្អ (array of 2-4 strings)
@@ -87,11 +296,13 @@ ${JSON.stringify(reportData, null, 2)}
 
     try {
       const parsed = JSON.parse(rawText);
-      return res.json({ success: true, isFallback: false, ...parsed });
+      const combinedAnalysis = parsed.analysis || `${parsed.summary || ''}\n\nចំណុចខ្លាំង៖\n${(parsed.strengths || []).map((s: string) => `- ${s}`).join('\n')}\n\nចំណុចខ្វះខាត៖\n${(parsed.concerns || []).map((c: string) => `- ${c}`).join('\n')}\n\nសេចក្តីសន្និដ្ឋាន៖\n${parsed.conclusions || ''}`;
+      return res.json({ success: true, isFallback: false, analysis: combinedAnalysis, ...parsed });
     } catch {
       return res.json({
         success: true,
         isFallback: false,
+        analysis: rawText,
         summary: rawText,
         strengths: ['សម្រេចបានអត្រាជាប់មធ្យមភាគខ្ពស់', 'កិច្ចសហការល្អជាមួយសហគមន៍', 'ការងារសុខភាពសិក្សាអនុវត្តទៀងទាត់'],
         concerns: ['បញ្ហាអណ្តូងទឹកខូច', 'សិស្សបោះបង់ដោយសារចំណាកស្រុក'],
@@ -107,7 +318,7 @@ ${JSON.stringify(reportData, null, 2)}
 // AI Recommendations Generator
 app.post('/api/ai/recommend', async (req, res) => {
   try {
-    const reportData = req.body;
+    const reportData = req.body.report || req.body;
     const ai = getGenAI();
 
     if (!ai) {

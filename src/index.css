@@ -2,23 +2,41 @@
 
 @layer base {
   body {
-    font-family: 'Kantumruy Pro', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    font-family: 'Kantumruy Pro', system-ui, -apple-system, sans-serif;
+  }
+  
+  .font-moul {
+    font-family: 'Moul', cursive, serif;
+  }
+
+  .font-kantumruy {
+    font-family: 'Kantumruy Pro', sans-serif;
   }
 }
 
-.font-moul {
-  font-family: 'Moul', serif;
+/* Custom scrollbars for table wrappers */
+.table-scrollbar::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.table-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+.table-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.table-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
+/* Print Optimization */
 @media print {
-  @page {
-    size: A4;
-    margin: 1.2cm 1cm 1.2cm 1cm;
-  }
   body {
     background: white !important;
     color: black !important;
-    font-size: 11pt !important;
+    font-size: 11pt;
   }
   .no-print {
     display: none !important;
@@ -26,13 +44,21 @@
   .print-only {
     display: block !important;
   }
-  .page-break-after {
-    page-break-after: always;
-  }
   .page-break-inside-avoid {
     page-break-inside: avoid;
   }
   table {
+    page-break-inside: auto;
+    width: 100% !important;
+  }
+  tr {
     page-break-inside: avoid;
+    page-break-after: auto;
+  }
+  thead {
+    display: table-header-group;
+  }
+  tfoot {
+    display: table-footer-group;
   }
 }
