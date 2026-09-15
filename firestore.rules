@@ -29,22 +29,21 @@ service cloud.firestore {
 
     // School Reports Collection
     match /school_reports/{reportId} {
-      allow get: if isSignedIn() && isOwner(resource.data.userId);
-      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
       allow create: if isSignedIn() && isValidId(reportId) &&
         incoming().userId == request.auth.uid &&
         incoming().schoolName is string &&
         incoming().status is string;
       allow update: if isSignedIn() && isValidId(reportId) &&
-        isOwner(resource.data.userId) &&
-        incoming().userId == resource.data.userId;
+        (isOwner(resource.data.userId) || incoming().userId == request.auth.uid);
       allow delete: if isSignedIn() && isValidId(reportId) && isOwner(resource.data.userId);
     }
 
     // Report Submissions Collection
     match /report_submissions/{submissionId} {
-      allow get: if isSignedIn() && isOwner(resource.data.userId);
-      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
       allow create: if isSignedIn() && isValidId(submissionId) &&
         incoming().userId == request.auth.uid &&
         incoming().reportId is string &&
@@ -56,9 +55,21 @@ service cloud.firestore {
       allow delete: if isSignedIn() && isValidId(submissionId) && isOwner(resource.data.userId);
     }
 
-    // Connection test document (safe read check)
+    // Report Save History / Version Audit Trail
+    match /report_history/{historyId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(historyId) &&
+        incoming().userId == request.auth.uid &&
+        incoming().reportId is string;
+      allow update: if isSignedIn() && isValidId(historyId) &&
+        (isOwner(resource.data.userId) || incoming().userId == request.auth.uid);
+      allow delete: if isSignedIn() && isValidId(historyId) && isOwner(resource.data.userId);
+    }
+
+    // Connection test document (safe read/write check)
     match /test/connection {
-      allow read: if true;
+      allow read, write: if true;
     }
   }
 }

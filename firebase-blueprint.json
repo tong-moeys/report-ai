@@ -105,6 +105,75 @@
         }
       },
       "required": ["id", "reportId", "userId", "schoolName", "recipientOffice", "status"]
+    },
+    "ReportVersionHistory": {
+      "title": "ReportVersionHistory",
+      "description": "ប្រវត្តិនៃការរក្សាទុក និងកំណែរបាយការណ៍ (Version History & Audit Trail)",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "History Record ID"
+        },
+        "reportId": {
+          "type": "string",
+          "description": "Associated Report ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "User UID who made this save"
+        },
+        "userEmail": {
+          "type": "string",
+          "description": "User Email"
+        },
+        "userName": {
+          "type": "string",
+          "description": "User Display Name"
+        },
+        "versionNumber": {
+          "type": "number",
+          "description": "Sequential Version Number"
+        },
+        "actionType": {
+          "type": "string",
+          "enum": ["manual_save", "auto_save", "restore_version", "initial_setup"],
+          "description": "ប្រភេទនៃការរក្សាទុក"
+        },
+        "summaryNotes": {
+          "type": "string",
+          "description": "កំណត់សម្គាល់ការកែប្រែ"
+        },
+        "schoolName": {
+          "type": "string",
+          "description": "ឈ្មោះសាលា"
+        },
+        "academicYear": {
+          "type": "string",
+          "description": "ឆ្នាំសិក្សា"
+        },
+        "totalStudents": {
+          "type": "number",
+          "description": "ចំនួនសិស្សសរុប"
+        },
+        "totalStaff": {
+          "type": "number",
+          "description": "ចំនួនបុគ្គលិកសរុប"
+        },
+        "reportSnapshot": {
+          "type": "object",
+          "description": "ទិន្នន័យ snapshot ពេញលេញសម្រាប់ restore"
+        },
+        "savedAt": {
+          "type": "string",
+          "description": "ពេលវេលារក្សាទុក (ISO String)"
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "Unix Milliseconds Timestamp"
+        }
+      },
+      "required": ["id", "reportId", "userId", "savedAt", "timestamp"]
     }
   },
   "firestore": {
@@ -115,6 +184,10 @@
     "/report_submissions/{submissionId}": {
       "schema": "ReportSubmission",
       "description": "ប្រវត្តិការបញ្ជូនឯកសាររបាយការណ៍ផ្លូវការ"
+    },
+    "/report_history/{historyId}": {
+      "schema": "ReportVersionHistory",
+      "description": "ប្រវត្តិនៃការរក្សាទុក និងកំណែទិន្នន័យរបាយការណ៍ទាំងអស់"
     }
   }
 }

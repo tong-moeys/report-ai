@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   SchoolMeta,
   Table1SchoolRooms,
@@ -15,6 +15,11 @@ import {
   MasterReportNarrative,
   StaffMember,
   ClassGradebook,
+  AppUser,
+  ReportSnapshotData,
+  ReportVersionHistoryItem,
+  UserRole,
+  StudentScoreRow,
 } from './types';
 import {
   initialSchoolMeta,
@@ -31,6 +36,8 @@ import {
   initialMasterReportNarrative,
 } from './data/initialData';
 import { initialStaffList, initialClassGradebooks } from './data/schoolDataRot';
+import { sampleDetailedStudents } from './data/sampleDetailedStudents';
+import { aggregateStudentsToSchoolData } from './utils/studentAggregator';
 import { Header } from './components/Header';
 import { QuickStatsBar } from './components/QuickStatsBar';
 import { Table1SchoolRoomsView } from './components/Table1SchoolRooms';
@@ -43,9 +50,27 @@ import { PartBView } from './components/PartBView';
 import { OfficialMasterReport } from './components/OfficialMasterReport';
 import { StaffNominalRoll } from './components/StaffNominalRoll';
 import { ClassGradebooksView } from './components/ClassGradebooksView';
+import { DetailedAcademicResultsView } from './components/DetailedAcademicResultsView';
+import { ImportDataModal } from './components/ImportDataModal';
+import { MoeysAiReportModal } from './components/MoeysAiReportModal';
 import { FullBookletView } from './components/FullBookletView';
 import { exportAllTablesToExcel } from './utils/exportUtils';
-import { Info, CheckCircle, Sparkles, ArrowRight, ArrowLeft, FileCheck2, Layers } from 'lucide-react';
+import { toKhmerNum } from './utils/khmerNumbers';
+import {
+  auth,
+  saveReportVersion,
+  getReportHistory,
+  loadLatestReport,
+  deleteReportVersion,
+  mapFirebaseUser,
+  saveUserRole,
+  loginWithRole,
+} from './firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { AuthModal } from './components/AuthModal';
+import { SaveHistoryModal } from './components/SaveHistoryModal';
+import { FirestoreModal } from './components/FirestoreModal';
+import { Info, CheckCircle, Sparkles, ArrowRight, ArrowLeft, FileCheck2, Layers, History, Shield, Database } from 'lucide-react';
 
 const STORAGE_KEYS = {
   MAIN_SECTION: 'kh_school_stat_main_section',
@@ -63,6 +88,7 @@ const STORAGE_KEYS = {
   NARRATIVE: 'kh_school_stat_narrative',
   STAFF_LIST: 'kh_school_stat_staff_list',
   GRADEBOOKS: 'kh_school_stat_gradebooks',
+  DETAILED_STUDENTS: 'kh_school_stat_detailed_students',
 };
 
 export default function App() {
@@ -70,9 +96,9 @@ export default function App() {
   const [mainSection, setMainSection] = useState<MainAppSection>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.MAIN_SECTION);
-      return (saved as MainAppSection) || 'part_a';
+      return (saved as MainAppSection) || 'part_b';
     } catch {
-      return 'part_a';
+      return 'part_b';
     }
   });
 
@@ -213,16 +239,253 @@ export default function App() {
     }
   });
 
+  // Detailed Academic Results (User requested dataset & import)
+  const [detailedStudents, setDetailedStudents] = useState<StudentScoreRow[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.DETAILED_STUDENTS);
+      return saved ? JSON.parse(saved) : sampleDetailedStudents;
+    } catch {
+      return sampleDetailedStudents;
+    }
+  });
+
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isAiMoeysModalOpen, setIsAiMoeysModalOpen] = useState(false);
+
   // UI state
   const [activeTab, setActiveTab] = useState<'all' | 't1' | 't1_staff' | 't2' | 't3' | 't4'>('all');
   const [showFormulas, setShowFormulas] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Authentication & Cloud Save History State
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isFirestoreModalOpen, setIsFirestoreModalOpen] = useState(false);
+  const [historyList, setHistoryList] = useState<ReportVersionHistoryItem[]>([]);
+  const [isSavingCloud, setIsSavingCloud] = useState(false);
+  const [isSyncingCloud, setIsSyncingCloud] = useState(false);
+  const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
+
+  // Consistent Report Identifier for Firestore
+  const reportId = 'report_primary_school_2025_2026';
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage(null);
     }, 3500);
+  };
+
+  // Helper to serialize full working state snapshot
+  const getCurrentSnapshot = (): ReportSnapshotData => ({
+    meta,
+    t1Rooms,
+    t1Staff,
+    t2Rows,
+    t3Rows,
+    t4Rows,
+    t4HeaderConfig,
+    library,
+    waterSanitation,
+    healthSocial,
+    finance,
+    narrative,
+    staffList,
+    gradebooks,
+    detailedStudents,
+  });
+
+  // Helper to apply snapshot to state
+  const applySnapshot = (snap: ReportSnapshotData) => {
+    if (!snap) return;
+    if (snap.meta) setMeta(snap.meta);
+    if (snap.t1Rooms) setT1Rooms(snap.t1Rooms);
+    if (snap.t1Staff) setT1Staff(snap.t1Staff);
+    if (snap.t2Rows) setT2Rows(snap.t2Rows);
+    if (snap.t3Rows) setT3Rows(snap.t3Rows);
+    if (snap.t4Rows) setT4Rows(snap.t4Rows);
+    if (snap.t4HeaderConfig) setT4HeaderConfig(snap.t4HeaderConfig);
+    if (snap.library) setLibrary(snap.library);
+    if (snap.waterSanitation) setWaterSanitation(snap.waterSanitation);
+    if (snap.healthSocial) setHealthSocial(snap.healthSocial);
+    if (snap.finance) setFinance(snap.finance);
+    if (snap.narrative) setNarrative(snap.narrative);
+    if (snap.staffList) setStaffList(snap.staffList);
+    if (snap.gradebooks) setGradebooks(snap.gradebooks);
+    if (snap.detailedStudents) setDetailedStudents(snap.detailedStudents);
+  };
+
+  // Listen to Firebase Auth state & sync latest Cloud Firestore state on load
+  useEffect(() => {
+    let isMounted = true;
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const appUser = mapFirebaseUser(firebaseUser);
+        if (isMounted) setCurrentUser(appUser);
+        if (appUser) {
+          try {
+            const [list, cloudData] = await Promise.all([
+              getReportHistory(reportId),
+              loadLatestReport(reportId),
+            ]);
+            if (isMounted) {
+              setHistoryList(list);
+              if (list.length > 0) {
+                setLastSavedTime(list[0].savedAt);
+              }
+              // Overwrite local state with latest saved Cloud state
+              if (cloudData) {
+                applySnapshot(cloudData);
+                console.log('Successfully synced latest report snapshot from Cloud Firestore');
+              }
+            }
+          } catch (err) {
+            console.warn('Initial cloud sync error:', err);
+          }
+        }
+      } else {
+        // Auto-initialize standard educational session for immediate seamless authorization
+        try {
+          const defaultUser = await loginWithRole('នាយកសាលា', `លោកនាយក ${meta.schoolName || 'សាលាបឋមសិក្សា'}`);
+          if (isMounted) setCurrentUser(defaultUser);
+        } catch (e) {
+          console.warn('Auto-init educational session note:', e);
+        }
+      }
+    });
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, [reportId, meta.schoolName]);
+
+  // Handle Save New Version (Snapshot & History log)
+  const handleSaveNewVersion = async (note: string) => {
+    let userToUse = currentUser;
+    if (!userToUse) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+    setIsSavingCloud(true);
+    try {
+      const snapshot = getCurrentSnapshot();
+      const result = await saveReportVersion(
+        reportId,
+        snapshot,
+        userToUse,
+        'manual_save',
+        note || 'បានរក្សាទុកកំណែដោយដៃ'
+      );
+      setHistoryList((prev) => [result.historyItem, ...prev.filter((i) => i.id !== result.historyItem.id)]);
+      setLastSavedTime(result.historyItem.savedAt);
+      if (result.savedToCloud) {
+        showToast(`បានរក្សាទុកកំណែទី ${toKhmerNum(result.historyItem.versionNumber)} លើ Cloud Firestore ដោយជោគជ័យ!`);
+      } else {
+        showToast(`បានរក្សាទុកក្នុងកុំព្យូទ័រ (Local Cache) - Cloud កំពុងតភ្ជាប់...`);
+      }
+    } catch (err: any) {
+      console.error('Save version error:', err);
+      showToast('បានរក្សាទុកក្នុងកុំព្យូទ័រ (Local Cache) រួចរាល់');
+    } finally {
+      setIsSavingCloud(false);
+    }
+  };
+
+  // Manual Fetch from Cloud
+  const handleFetchFromCloud = async () => {
+    setIsSyncingCloud(true);
+    try {
+      const cloudData = await loadLatestReport(reportId);
+      if (cloudData) {
+        applySnapshot(cloudData);
+        showToast('បានទាញយកទិន្នន័យចុងក្រោយពី Cloud Firestore ដោយជោគជ័យ!');
+      } else {
+        showToast('មិនទាន់មានទិន្នន័យលើ Cloud Firestore នៅឡើយទេ');
+      }
+      const list = await getReportHistory(reportId);
+      setHistoryList(list);
+      if (list.length > 0) {
+        setLastSavedTime(list[0].savedAt);
+      }
+    } catch (e: any) {
+      console.error('Fetch cloud error:', e);
+      showToast('បរាជ័យក្នុងការទាញយកពី Cloud Firestore');
+    } finally {
+      setIsSyncingCloud(false);
+    }
+  };
+
+  // Manual Push to Cloud
+  const handlePushToCloud = async () => {
+    await handleSaveNewVersion('បានរក្សាទុកដោយផ្ទាល់ពីបន្ទះ Firestore');
+  };
+
+  // Quick Save button from top bar
+  const handleQuickSave = () => {
+    if (!currentUser) {
+      setIsAuthModalOpen(true);
+    } else {
+      handleSaveNewVersion('');
+    }
+  };
+
+  // Handle Restore from a historic version
+  const handleRestoreVersion = async (item: ReportVersionHistoryItem) => {
+    const snap = item.reportSnapshot;
+    if (!snap) return;
+    if (snap.meta) setMeta(snap.meta);
+    if (snap.t1Rooms) setT1Rooms(snap.t1Rooms);
+    if (snap.t1Staff) setT1Staff(snap.t1Staff);
+    if (snap.t2Rows) setT2Rows(snap.t2Rows);
+    if (snap.t3Rows) setT3Rows(snap.t3Rows);
+    if (snap.t4Rows) setT4Rows(snap.t4Rows);
+    if (snap.t4HeaderConfig) setT4HeaderConfig(snap.t4HeaderConfig);
+    if (snap.library) setLibrary(snap.library);
+    if (snap.waterSanitation) setWaterSanitation(snap.waterSanitation);
+    if (snap.healthSocial) setHealthSocial(snap.healthSocial);
+    if (snap.finance) setFinance(snap.finance);
+    if (snap.narrative) setNarrative(snap.narrative);
+    if (snap.staffList) setStaffList(snap.staffList);
+    if (snap.gradebooks) setGradebooks(snap.gradebooks);
+
+    showToast(`បានស្តារទិន្នន័យត្រឡប់ទៅ «កំណែទី ${toKhmerNum(item.versionNumber)}» ជោគជ័យ!`);
+
+    // Log the restoration event in version history
+    if (currentUser) {
+      try {
+        const restoreLog = await saveReportVersion(
+          reportId,
+          snap,
+          currentUser,
+          'restore_version',
+          `បានស្តារពីកំណែទី ${toKhmerNum(item.versionNumber)} (${item.savedAt})`
+        );
+        setHistoryList((prev) => [restoreLog.historyItem, ...prev.filter((i) => i.id !== restoreLog.historyItem.id)]);
+      } catch (e) {
+        console.warn('Restore log save note:', e);
+      }
+    }
+  };
+
+  // Delete a history record
+  const handleDeleteVersion = async (versionId: string) => {
+    if (!currentUser) return;
+    try {
+      await deleteReportVersion(versionId, reportId);
+      setHistoryList((prev) => prev.filter((i) => i.id !== versionId));
+      showToast('បានលុបកំណែចេញពីប្រវត្តិ');
+    } catch (e) {
+      console.warn('Delete error:', e);
+    }
+  };
+
+  // Switch educational role
+  const handleChangeRole = (newRole: UserRole) => {
+    if (!currentUser) return;
+    saveUserRole(currentUser.uid, newRole);
+    setCurrentUser((prev) => (prev ? { ...prev, role: newRole } : null));
+    showToast(`បានប្តូរតួនាទីទៅជា «${newRole}»`);
   };
 
   // Auto-save to localStorage
@@ -243,6 +506,7 @@ export default function App() {
       localStorage.setItem(STORAGE_KEYS.NARRATIVE, JSON.stringify(narrative));
       localStorage.setItem(STORAGE_KEYS.STAFF_LIST, JSON.stringify(staffList));
       localStorage.setItem(STORAGE_KEYS.GRADEBOOKS, JSON.stringify(gradebooks));
+      localStorage.setItem(STORAGE_KEYS.DETAILED_STUDENTS, JSON.stringify(detailedStudents));
     } catch {
       // ignore storage write errors
     }
@@ -262,6 +526,7 @@ export default function App() {
     narrative,
     staffList,
     gradebooks,
+    detailedStudents,
   ]);
 
   // Keep school names in sync when modified in metadata
@@ -354,8 +619,94 @@ export default function App() {
       setHealthSocial(initialHealthSocialData);
       setFinance(initialSchoolFinanceData);
       setNarrative(initialMasterReportNarrative);
+      setDetailedStudents(sampleDetailedStudents);
       showToast('បានកំណត់ទិន្នន័យដើមឡើងវិញរួចរាល់!');
     }
+  };
+
+  // Summary memo of current detailed students
+  const currentSummary = useMemo(() => {
+    return aggregateStudentsToSchoolData(
+      detailedStudents,
+      t1Rooms,
+      t2Rows,
+      t3Rows,
+      t4Rows,
+      gradebooks
+    ).summary;
+  }, [detailedStudents, t1Rooms, t2Rows, t3Rows, t4Rows, gradebooks]);
+
+  // Sync detailed students to all official school reports (Tables A, B, Master Report & Class Gradebooks)
+  const handleSyncDetailedToSchoolReports = () => {
+    const result = aggregateStudentsToSchoolData(
+      detailedStudents,
+      t1Rooms,
+      t2Rows,
+      t3Rows,
+      t4Rows,
+      gradebooks
+    );
+
+    setT1Rooms(result.updatedT1Rooms);
+    setT2Rows(result.updatedT2Rows);
+    setT3Rows(result.updatedT3Rows);
+    setT4Rows(result.updatedT4Rows);
+    setGradebooks(result.updatedGradebooks);
+
+    // Sync health deworming target
+    const totalCount = result.summary.totalEnrolled;
+    setHealthSocial((prev) => ({
+      ...prev,
+      dewormingRound1: {
+        ...prev.dewormingRound1,
+        target: totalCount,
+      },
+      dewormingRound2: {
+        ...prev.dewormingRound2,
+        target: totalCount,
+      },
+    }));
+
+    showToast(
+      `បានគណនា និងធ្វើបច្ចុប្បន្នភាពទៅរបាយការណ៍ A, B, បូកសរុប និងចំណាត់ថ្នាក់ (${toKhmerNum(
+        result.summary.totalEnrolled
+      )} នាក់)!`
+    );
+  };
+
+  // Import handler with optional auto-calculation
+  const handleImportSuccess = (
+    importedStudents: StudentScoreRow[],
+    autoSync: boolean,
+    mode: 'replace' | 'append'
+  ) => {
+    const nextStudents = mode === 'replace' ? importedStudents : [...detailedStudents, ...importedStudents];
+    const indexed = nextStudents.map((s, idx) => ({ ...s, no: s.no || idx + 1 }));
+    setDetailedStudents(indexed);
+
+    if (autoSync) {
+      const result = aggregateStudentsToSchoolData(
+        indexed,
+        t1Rooms,
+        t2Rows,
+        t3Rows,
+        t4Rows,
+        gradebooks
+      );
+      setT1Rooms(result.updatedT1Rooms);
+      setT2Rows(result.updatedT2Rows);
+      setT3Rows(result.updatedT3Rows);
+      setT4Rows(result.updatedT4Rows);
+      setGradebooks(result.updatedGradebooks);
+      showToast(`បាននាំចូល និងគណនាស្វ័យប្រវត្តទៅរបាយការណ៍សាលាជោគជ័យ (${toKhmerNum(indexed.length)} នាក់)!`);
+    } else {
+      showToast(`បាននាំចូលទិន្នន័យសិស្ស ${toKhmerNum(importedStudents.length)} នាក់ជោគជ័យ!`);
+    }
+  };
+
+  const handleLoadSampleData = () => {
+    setDetailedStudents(sampleDetailedStudents);
+    showToast('បានផ្ទុកទិន្នន័យគំរូ ៧៦-៨០ ពីសំណើអ្នកប្រើប្រាស់រួចរាល់!');
   };
 
   // Export to Excel / XLS (Includes Part A & Part B)
@@ -391,6 +742,15 @@ export default function App() {
         setMainSection={setMainSection}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        currentUser={currentUser}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onOpenHistoryModal={() => setIsHistoryModalOpen(true)}
+        onOpenFirestoreModal={() => setIsFirestoreModalOpen(true)}
+        onQuickSave={handleQuickSave}
+        isSaving={isSavingCloud}
+        historyCount={historyList.length}
+        lastSavedTime={lastSavedTime}
+        onChangeRole={handleChangeRole}
       />
 
       {/* Toast Alert Notification */}
@@ -537,6 +897,7 @@ export default function App() {
         {mainSection === 'part_b' && (
           <div>
             <PartBView
+              meta={meta}
               t1Rooms={t1Rooms}
               t1Staff={t1Staff}
               library={library}
@@ -549,6 +910,10 @@ export default function App() {
               onChangeFinance={setFinance}
               onNavigateToMaster={() => {
                 setMainSection('master_report');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onNavigateToPartA={() => {
+                setMainSection('part_a');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
             />
@@ -576,6 +941,47 @@ export default function App() {
                 className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
               >
                 <span>បន្តទៅបញ្ជីបុគ្គលិក (ទំព័រទី ៧)</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* -------------------------------------------------- */}
+        {/* SECTION: Detailed Academic Results (User requested dataset & import) */}
+        {/* -------------------------------------------------- */}
+        {mainSection === 'detailed_results' && (
+          <div className="space-y-6">
+            <DetailedAcademicResultsView
+              meta={meta}
+              students={detailedStudents}
+              onUpdateStudents={setDetailedStudents}
+              onOpenImportModal={() => setIsImportModalOpen(true)}
+              onOpenAiReportModal={() => setIsAiMoeysModalOpen(true)}
+              onSyncToSchoolReports={handleSyncDetailedToSchoolReports}
+              onLoadSampleData={handleLoadSampleData}
+            />
+
+            <div className="no-print flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-white border border-slate-200 rounded-2xl shadow-xs">
+              <button
+                onClick={() => {
+                  setMainSection('part_b');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="flex items-center gap-2 px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-medium rounded-xl transition-colors cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>ត្រឡប់ទៅផ្នែក B</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setMainSection('class_rankings');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+              >
+                <span>បន្តទៅចំណាត់ថ្នាក់តាមថ្នាក់ (ទំព័រ ១២-២១)</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -628,18 +1034,23 @@ export default function App() {
               meta={meta}
               gradebooks={gradebooks}
               onUpdateGradebooks={setGradebooks}
+              onOpenImportModal={() => setIsImportModalOpen(true)}
+              onNavigateToDetailedResults={() => {
+                setMainSection('detailed_results');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
             />
 
             <div className="no-print flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-white border border-slate-200 rounded-2xl shadow-xs">
               <button
                 onClick={() => {
-                  setMainSection('staff_nominal');
+                  setMainSection('detailed_results');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 className="flex items-center gap-2 px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-medium rounded-xl transition-colors cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>ត្រឡប់ទៅបញ្ជីបុគ្គលិក</span>
+                <span>ត្រឡប់ទៅលទ្ធផលលម្អិត</span>
               </button>
 
               <button
@@ -703,6 +1114,7 @@ export default function App() {
               narrative={narrative}
               onChangeNarrative={setNarrative}
               onExportExcel={handleExportExcel}
+              onOpenAiMoeysModal={() => setIsAiMoeysModalOpen(true)}
             />
           </div>
         )}
@@ -739,7 +1151,23 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <p>© {meta.academicYear} | ប្រព័ន្ធគំរូតារាងបញ្ចូលទិន្នន័យ និងគណនាស្វ័យប្រវត្តសម្រាប់សាលាបឋមសិក្សា (ផ្នែក A, ផ្នែក B និងរបាយការណ៍រួម)</p>
           <div className="flex items-center gap-3 text-slate-400">
-            <span>រក្សាទុកស្វ័យប្រវត្តក្នុងកុំព្យូទ័រ (Local Storage)</span>
+            <button
+              id="btn-footer-open-firestore"
+              onClick={() => setIsFirestoreModalOpen(true)}
+              className="flex items-center gap-1.5 text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded border border-amber-200 font-medium cursor-pointer transition-colors"
+              title="ពិនិត្យទីតាំង Cloud Firestore Database"
+            >
+              <Database className="w-3.5 h-3.5 text-amber-700" />
+              <span>Firestore Console</span>
+            </button>
+            <span>•</span>
+            <button
+              id="btn-footer-open-history"
+              onClick={() => setIsHistoryModalOpen(true)}
+              className="text-indigo-600 hover:underline cursor-pointer font-medium"
+            >
+              ប្រវត្តិរក្សាទុក ({toKhmerNum(historyList.length)})
+            </button>
             <span>•</span>
             <button
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -750,6 +1178,62 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Authentication Dialog */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          showToast(`សូមស្វាគមន៍! បានចូលប្រព័ន្ធជា «${user.displayName || user.role}»`);
+        }}
+      />
+
+      {/* Firestore Database Transparency & Live Sync Dialog */}
+      <FirestoreModal
+        isOpen={isFirestoreModalOpen}
+        onClose={() => setIsFirestoreModalOpen(false)}
+        currentUser={currentUser}
+        onFetchFromCloud={handleFetchFromCloud}
+        onPushToCloud={handlePushToCloud}
+        isSyncing={isSyncingCloud || isSavingCloud}
+      />
+
+      {/* Save Version History & Audit Trail Dialog */}
+      <SaveHistoryModal
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        currentUser={currentUser}
+        historyList={historyList}
+        onSaveNewVersion={handleSaveNewVersion}
+        onRestoreVersion={handleRestoreVersion}
+        onDeleteVersion={handleDeleteVersion}
+        isSaving={isSavingCloud}
+      />
+
+      {/* Import Data Modal */}
+      <ImportDataModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportSuccess={handleImportSuccess}
+      />
+
+      {/* MoEYS AI Official Report Modal */}
+      <MoeysAiReportModal
+        isOpen={isAiMoeysModalOpen}
+        onClose={() => setIsAiMoeysModalOpen(false)}
+        meta={meta}
+        students={detailedStudents}
+        summary={currentSummary}
+        reportData={getCurrentSnapshot()}
+        onApplyNarrative={(text) => {
+          setNarrative((prev) => ({
+            ...prev,
+            conclusion: text,
+          }));
+          showToast('បានបញ្ចូលសេចក្តីវិភាគ AI ទៅក្នុងរបាយការណ៍បូកសរុប!');
+        }}
+      />
     </div>
   );
 }

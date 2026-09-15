@@ -48,6 +48,7 @@ interface OfficialMasterReportProps {
   narrative: MasterReportNarrative;
   onChangeNarrative: (narrative: MasterReportNarrative) => void;
   onExportExcel: () => void;
+  onOpenAiMoeysModal?: () => void;
 }
 
 export const OfficialMasterReport: React.FC<OfficialMasterReportProps> = ({
@@ -65,6 +66,7 @@ export const OfficialMasterReport: React.FC<OfficialMasterReportProps> = ({
   narrative,
   onChangeNarrative,
   onExportExcel,
+  onOpenAiMoeysModal,
 }) => {
   const [isEditingNarrative, setIsEditingNarrative] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -269,14 +271,25 @@ export const OfficialMasterReport: React.FC<OfficialMasterReportProps> = ({
             <span>{isEditingNarrative ? 'បិទការកែសម្រួល' : 'កែសម្រួលអត្ថបទបូកសរុប'}</span>
           </button>
 
+          {onOpenAiMoeysModal && (
+            <button
+              onClick={onOpenAiMoeysModal}
+              className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition-all cursor-pointer"
+              title="វិភាគរបាយការណ៍ MoEYS ពេញលេញតាម AI"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>AI វិភាគរបាយការណ៍ MoEYS</span>
+            </button>
+          )}
+
           <button
             onClick={handleGenerateAiConclusion}
             disabled={isAiLoading}
-            className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-xs disabled:opacity-50 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 bg-purple-100 text-purple-800 hover:bg-purple-200 border border-purple-300 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-2xs disabled:opacity-50 transition-all cursor-pointer"
             title="ប្រើប្រាស់បញ្ញាសិប្បនិម្មិតដើម្បីចងក្រងសេចក្តីសន្និដ្ឋាន"
           >
-            {isAiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-            <span>{isAiLoading ? 'កំពុងសរសេរ...' : 'AI បង្កើតសេចក្តីសន្និដ្ឋាន'}</span>
+            {isAiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-purple-600" />}
+            <span>{isAiLoading ? 'កំពុងសរសេរ...' : 'AI សេចក្តីសន្និដ្ឋាន'}</span>
           </button>
 
           <button

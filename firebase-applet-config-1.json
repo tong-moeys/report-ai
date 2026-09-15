@@ -1,0 +1,10 @@
+{
+  "const firebaseConfig" 
+  "apiKey:" "AIzaSyBk-3zzh3TUCvgWxqG3_hukvosvq_7ntgE",
+  "authDomain: "nextjs-cc183.firebaseapp.com",
+  "projectId: "nextjs-cc183",
+  "storageBucket: "nextjs-cc183.firebasestorage.app",
+  "messagingSenderId: "741923957012",
+  "appId: "1:741923957012:web:f91ef1b10c75d20ab2ba01",
+  "measurementId: "G-EN256R8C5F"
+};

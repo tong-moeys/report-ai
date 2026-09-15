@@ -1,6 +1,8 @@
 export interface SchoolMeta {
   schoolName: string;
   clusterOrDistrict: string;
+  district?: string;
+  schoolCode?: string;
   province: string;
   academicYear: string;
   directorName: string;
@@ -207,7 +209,7 @@ export interface StaffMember {
 }
 
 // ==========================================
-// ចំណាត់ថ្នាក់តាមថ្នាក់ (Class Gradebook & Ranking - Pages 12-21)
+// ចំណាត់ថ្នាក់តាមថ្នាក់ & តារាងលទ្ធផលសិក្សាលម្អិត (Detailed Student Academic Results)
 // ==========================================
 export interface StudentScoreRow {
   id: string;
@@ -215,18 +217,35 @@ export interface StudentScoreRow {
   name: string;
   gender: 'ស' | 'ប' | 'ស្រី' | 'ប្រុស';
   dob: string;
-  pob: string;
-  sem1Avg: number;
-  sem1Rank: number;
-  sem2Avg: number;
-  sem2Rank: number;
-  yearAvg: number;
-  yearRank: number;
-  gradeLetter: 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+  gradeClass?: string; // ថ្នាក់ ឧ. "1-A", "1-B", "2-A", "3-A", "4-A", "5-A", "6-A"
+  pob: string;          // ទីកន្លែងកំណើត
+  
+  // ឆមាស១
+  sem1MonthlyAvg?: number; // ម.ភាគខែ
+  sem1ExamAvg?: number;    // ម.ភាគប្រឡង
+  sem1Avg: number;         // ម.ភាគប្រចាំ ឆមាស១
+  sem1Rank?: number;
+  sem1Grade?: 'A' | 'B' | 'C' | 'D' | 'E' | 'F'; // និទ្ទេស ឆមាស១
+
+  // ឆមាស២
+  sem2MonthlyAvg?: number; // ម.ភាគខែ
+  sem2ExamAvg?: number;    // ម.ភាគប្រឡង
+  sem2Avg: number;         // ម.ភាគប្រចាំ ឆមាស២
+  sem2Rank?: number;
+  sem2Grade?: 'A' | 'B' | 'C' | 'D' | 'E' | 'F'; // និទ្ទេស ឆមាស២
+
+  // ប្រចាំឆ្នាំ
+  annualSem1?: number;     // ប្រ.ឆមាស១
+  annualSem2?: number;     // ប្រ.ឆមាស២
+  yearAvg: number;         // ម.ប្រចាំឆ្នាំ
+  yearRank?: number;
+  gradeLetter: 'A' | 'B' | 'C' | 'D' | 'E' | 'F'; // និទ្ទេស ប្រចាំឆ្នាំ
+  
+  status?: 'ឡើងថ្នាក់' | 'ត្រួតថ្នាក់' | 'បោះបង់' | string; // ស្ថានភាព
   isDropped?: boolean;
-  absentPermission: number;
-  absentNoPermission: number;
-  absentTotal: number;
+  absentPermission?: number;
+  absentNoPermission?: number;
+  absentTotal?: number;
 }
 
 export interface ClassGradebook {
@@ -239,8 +258,84 @@ export interface ClassGradebook {
 export type MainAppSection =
   | 'part_a'
   | 'part_b'
+  | 'detailed_results'
   | 'staff_nominal'
   | 'class_rankings'
   | 'master_report'
   | 'full_booklet';
+
+// ==========================================
+// MoEYS AI Official Report Types
+// ==========================================
+export interface MoeysReportResult {
+  title: string;
+  academicYear: string;
+  schoolName: string;
+  generatedDate: string;
+  executiveSummary: string;
+  academicAnalysis: string;
+  genderAnalysis: string;
+  pedagogyAndCurriculum: string;
+  dropoutsAndRetention: string;
+  strengths: string[];
+  challenges: string[];
+  nextYearActionPlan: string[];
+  moeysRecommendations: Array<{
+    target: string;
+    action: string;
+  }>;
+  fullFormattedReport: string;
+}
+
+// ==========================================
+// Authentication & Version History Types
+// ==========================================
+export type UserRole = 'នាយកសាលា' | 'នាយករង' | 'មន្ត្រីស្ថិតិ' | 'គ្រូបង្រៀន';
+
+export interface AppUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  role: UserRole;
+  schoolName?: string;
+  isAnonymous?: boolean;
+}
+
+export interface ReportSnapshotData {
+  meta: SchoolMeta;
+  t1Rooms: Table1SchoolRooms;
+  t1Staff: Table1Staff;
+  t2Rows: Table2RowInput[];
+  t3Rows: Table3RowInput[];
+  t4Rows: Table4RowInput[];
+  t4HeaderConfig: Table4HeaderConfig;
+  library: LibraryData;
+  waterSanitation: WaterSanitationData;
+  healthSocial: HealthSocialData;
+  finance: SchoolFinanceData;
+  narrative: MasterReportNarrative;
+  staffList: StaffMember[];
+  gradebooks: ClassGradebook[];
+  detailedStudents?: StudentScoreRow[];
+}
+
+export interface ReportVersionHistoryItem {
+  id: string;
+  reportId: string;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  userRole: UserRole | string;
+  versionNumber: number;
+  actionType: 'manual_save' | 'auto_save' | 'restore_version' | 'initial_setup';
+  summaryNotes: string;
+  schoolName: string;
+  academicYear: string;
+  totalStudents: number;
+  totalStaff: number;
+  reportSnapshot: ReportSnapshotData;
+  savedAt: string;
+  timestamp: number;
+}
 

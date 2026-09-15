@@ -411,3 +411,273 @@ export function exportAllTablesToExcel(
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+
+export function exportPartBToExcel(
+  meta: SchoolMeta,
+  t1Rooms: Table1SchoolRooms,
+  t1Staff: Table1Staff,
+  library: LibraryData,
+  waterSanitation: WaterSanitationData,
+  healthSocial: HealthSocialData,
+  finance: SchoolFinanceData
+) {
+  const gradesKeys: Array<keyof Pick<Table1SchoolRooms, 'g1' | 'g2' | 'g3' | 'g4' | 'g5' | 'g6'>> = [
+    'g1', 'g2', 'g3', 'g4', 'g5', 'g6'
+  ];
+  const t1TotalStudents = gradesKeys.reduce((a, k) => a + (Number(t1Rooms[k].total) || 0), 0);
+  const t1TotalFemale = gradesKeys.reduce((a, k) => a + (Number(t1Rooms[k].female) || 0), 0);
+
+  const teachingTotal =
+    (Number(t1Staff.pureTeaching.total) || 0) +
+    (Number(t1Staff.multiGrade.total) || 0) +
+    (Number(t1Staff.deputyTeaching.total) || 0) +
+    (Number(t1Staff.contractTeaching.total) || 0);
+  const teachingFemale =
+    (Number(t1Staff.pureTeaching.female) || 0) +
+    (Number(t1Staff.multiGrade.female) || 0) +
+    (Number(t1Staff.deputyTeaching.female) || 0) +
+    (Number(t1Staff.contractTeaching.female) || 0);
+  const totalStaff =
+    (Number(t1Staff.directorDeputy.total) || 0) +
+    (Number(t1Staff.officeAdmin.total) || 0) +
+    teachingTotal +
+    (Number(t1Staff.assistTeaching.total) || 0);
+  const totalStaffFemale =
+    (Number(t1Staff.directorDeputy.female) || 0) +
+    (Number(t1Staff.officeAdmin.female) || 0) +
+    teachingFemale +
+    (Number(t1Staff.assistTeaching.female) || 0);
+
+  const totalDisabled =
+    (Number(healthSocial.disabledPhysical.total) || 0) +
+    (Number(healthSocial.disabledVisual.total) || 0) +
+    (Number(healthSocial.disabledHearing.total) || 0) +
+    (Number(healthSocial.disabledIntellectual.total) || 0);
+  const totalDisabledFemale =
+    (Number(healthSocial.disabledPhysical.female) || 0) +
+    (Number(healthSocial.disabledVisual.female) || 0) +
+    (Number(healthSocial.disabledHearing.female) || 0) +
+    (Number(healthSocial.disabledIntellectual.female) || 0);
+
+  const totalBooks = (Number(library.storyBooks) || 0) + (Number(library.textBooks) || 0) + (Number(library.teacherGuides) || 0);
+  const budgetBalance = (Number(finance.budgetReceivedPB) || 0) - (Number(finance.budgetExpendedPB) || 0);
+
+  const html = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+      <meta charset="utf-8" />
+      <style>
+        body { font-family: 'Kantumruy Pro', 'Khmer OS Siemreap', sans-serif; font-size: 11pt; }
+        table { border-collapse: collapse; margin-bottom: 25px; width: 100%; }
+        th, td { border: 1px solid #334155; padding: 6px 8px; text-align: center; }
+        th { background-color: #f1f5f9; font-weight: bold; }
+        .title { font-size: 14pt; font-weight: bold; text-align: center; margin: 15px 0 10px 0; }
+        .header-meta { margin-bottom: 12px; }
+        .bg-calc { background-color: #e2e8f0; font-weight: bold; }
+        .text-left { text-align: left; }
+      </style>
+    </head>
+    <body>
+      <div class="header-meta">
+        <div><strong>ព្រះរាជាណាចក្រកម្ពុជា</strong></div>
+        <div><strong>ជាតិ សាសនា ព្រះមហាក្សត្រ</strong></div>
+        <br/>
+        <div>មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្ត៖ ${meta.province || ''}</div>
+        <div>ការិយាល័យអប់រំ យុវជន និងកីឡា ស្រុក/ខណ្ឌ៖ ${meta.district || meta.clusterOrDistrict || ''}</div>
+        <div>សាលាបឋមសិក្សា៖ <strong>${meta.schoolName || ''}</strong> ${meta.schoolCode ? `(កូដ៖ ${meta.schoolCode})` : ''}</div>
+      </div>
+
+      <div class="title">ផ្នែក B ៖ របាយការណ៍ស្ថិតិឯកទេស និងសង្គម ឆ្នាំសិក្សា ${meta.academicYear}</div>
+
+      <!-- Table 1: Staff & Library -->
+      <table>
+        <tr>
+          <th colspan="6">១. ស្ថិតិបុគ្គលិកអប់រំ និងបណ្ណាល័យសាលា</th>
+        </tr>
+        <tr>
+          <th>បុគ្គលិកសរុប</th>
+          <th>បុគ្គលិកស្រី</th>
+          <th>គ្រូបង្រៀនផ្ទាល់</th>
+          <th>គ្រូស្រី</th>
+          <th>បណ្ណារក្សទទួលបន្ទុក</th>
+          <th>កាលវិភាគអានទៀងទាត់</th>
+        </tr>
+        <tr>
+          <td class="bg-calc">${totalStaff} នាក់</td>
+          <td class="bg-calc">${totalStaffFemale} នាក់</td>
+          <td>${teachingTotal} នាក់</td>
+          <td>${teachingFemale} នាក់</td>
+          <td>${library.librarianName || 'មិនទាន់បញ្ជាក់'}</td>
+          <td>${library.hasReadingTimetable ? 'មានកាលវិភាគ' : 'គ្មាន'}</td>
+        </tr>
+        <tr>
+          <th>សៀវភៅរឿង/អាន</th>
+          <th>សៀវភៅពុម្ព</th>
+          <th>ឯកសារណែនាំគ្រូ</th>
+          <th>សៀវភៅសរុប</th>
+          <th>អ្នកអានប្រចាំខែ (សរុប/ស្រី)</th>
+          <th>សៀវភៅខ្ចី/ខែ</th>
+        </tr>
+        <tr>
+          <td>${library.storyBooks} ក្បាល</td>
+          <td>${library.textBooks} ក្បាល</td>
+          <td>${library.teacherGuides} ក្បាល</td>
+          <td class="bg-calc">${totalBooks} ក្បាល</td>
+          <td>${library.readersMonthly.total} នាក់ (ស្រី ${library.readersMonthly.female})</td>
+          <td>${library.borrowingMonthly} ក្បាល</td>
+        </tr>
+      </table>
+
+      <!-- Table 2: WASH -->
+      <table>
+        <tr>
+          <th colspan="6">២. ស្ថិតិទឹកស្អាត និងបង្គន់អនាម័យក្នុងសាលារៀន (WASH)</th>
+        </tr>
+        <tr>
+          <th>ប្រភពទឹកប្រើប្រាស់</th>
+          <th>ទឹកស្អាតសម្រាប់ផឹក</th>
+          <th>កន្លែងលាងដៃ</th>
+          <th>មានសាប៊ូជាប្រចាំ</th>
+          <th>បង្គន់កំពុងដំណើរការ</th>
+          <th>វិធីគ្រប់គ្រងសំរាម</th>
+        </tr>
+        <tr>
+          <td>${waterSanitation.waterSource}</td>
+          <td>${waterSanitation.hasSafeDrinkingWater ? 'មាន' : 'គ្មាន'}</td>
+          <td>${waterSanitation.handwashingStations} កន្លែង</td>
+          <td>${waterSanitation.hasSoapAvailable ? 'មាន' : 'គ្មាន'}</td>
+          <td class="bg-calc">${waterSanitation.functioningLatrines} បន្ទប់</td>
+          <td>${waterSanitation.wasteDisposalMethod}</td>
+        </tr>
+        <tr>
+          <th>បន្ទប់គ្រូ</th>
+          <th>សិស្សប្រុស</th>
+          <th>សិស្សស្រី</th>
+          <th>សរុបបន្ទប់បង្គន់</th>
+          <th>ចំនួនសិស្សតារាង១</th>
+          <th>អត្រាសិស្ស/១បង្គន់</th>
+        </tr>
+        <tr>
+          <td>${waterSanitation.teacherLatrines}</td>
+          <td>${waterSanitation.boysLatrines}</td>
+          <td>${waterSanitation.girlsLatrines}</td>
+          <td class="bg-calc">${(Number(waterSanitation.teacherLatrines) || 0) + (Number(waterSanitation.boysLatrines) || 0) + (Number(waterSanitation.girlsLatrines) || 0)} បន្ទប់</td>
+          <td>${t1TotalStudents} នាក់</td>
+          <td class="bg-calc">${Math.round(t1TotalStudents / Math.max(1, Number(waterSanitation.functioningLatrines) || 1))} សិស្ស/បង្គន់</td>
+        </tr>
+      </table>
+
+      <!-- Table 3: Health & Social -->
+      <table>
+        <tr>
+          <th colspan="6">៣. ស្ថិតិការផ្ដល់ថ្នាំទម្លាក់ព្រូន សិស្សក្រីក្រ និងពិការភាព</th>
+        </tr>
+        <tr>
+          <th>ទម្លាក់ព្រូន ជុំទី១</th>
+          <th>គោលដៅ</th>
+          <th>ទទួលសរុប</th>
+          <th>ស្រី</th>
+          <th>ភាគរយសម្រេច</th>
+          <th>កំណត់សម្គាល់</th>
+        </tr>
+        <tr>
+          <td>ឆមាសទី ១</td>
+          <td>${healthSocial.dewormingRound1.target || t1TotalStudents}</td>
+          <td class="bg-calc">${healthSocial.dewormingRound1.receivedTotal}</td>
+          <td>${healthSocial.dewormingRound1.receivedFemale}</td>
+          <td class="bg-calc">${formatPct(healthSocial.dewormingRound1.receivedTotal, healthSocial.dewormingRound1.target || t1TotalStudents)}</td>
+          <td>សុខភាពសិក្សា</td>
+        </tr>
+        <tr>
+          <td>ឆមាសទី ២</td>
+          <td>${healthSocial.dewormingRound2.target || t1TotalStudents}</td>
+          <td class="bg-calc">${healthSocial.dewormingRound2.receivedTotal}</td>
+          <td>${healthSocial.dewormingRound2.receivedFemale}</td>
+          <td class="bg-calc">${formatPct(healthSocial.dewormingRound2.receivedTotal, healthSocial.dewormingRound2.target || t1TotalStudents)}</td>
+          <td>សុខភាពសិក្សា</td>
+        </tr>
+        <tr>
+          <th>ក្រីក្រកម្រិត ១ (សរុប/ស្រី)</th>
+          <th>ក្រីក្រកម្រិត ២ (សរុប/ស្រី)</th>
+          <th>សរុបសិស្សក្រីក្រ</th>
+          <th>អាហារូបករណ៍ (សរុប/ស្រី)</th>
+          <th>សិស្សពិការ (សរុប/ស្រី)</th>
+          <th>ប្រភេទពិការភាព</th>
+        </tr>
+        <tr>
+          <td>${healthSocial.idPoor1.total} (ស្រី ${healthSocial.idPoor1.female})</td>
+          <td>${healthSocial.idPoor2.total} (ស្រី ${healthSocial.idPoor2.female})</td>
+          <td class="bg-calc">${(Number(healthSocial.idPoor1.total) || 0) + (Number(healthSocial.idPoor2.total) || 0)} នាក់</td>
+          <td>${healthSocial.scholarships.total} (ស្រី ${healthSocial.scholarships.female})</td>
+          <td class="bg-calc">${totalDisabled} (ស្រី ${totalDisabledFemale})</td>
+          <td class="text-left">កាយសម្បទា: ${healthSocial.disabledPhysical.total}, គំហើញ: ${healthSocial.disabledVisual.total}, សោត: ${healthSocial.disabledHearing.total}, សតិបញ្ញា: ${healthSocial.disabledIntellectual.total}</td>
+        </tr>
+      </table>
+
+      <!-- Table 4: Finance PB -->
+      <table>
+        <tr>
+          <th colspan="6">៤. ស្ថិតិថវិកាដំណើរការសាលារៀន (Program Budgeting - PB)</th>
+        </tr>
+        <tr>
+          <th>ថវិកាគ្រោងសរុប</th>
+          <th>ថវិកាបានទទួល</th>
+          <th>បានចំណាយជាក់ស្តែង</th>
+          <th>សមតុល្យនៅសល់</th>
+          <th>ភាគរយអនុវត្ត</th>
+          <th>ស្ថានភាពថវិកា</th>
+        </tr>
+        <tr>
+          <td>${Number(finance.budgetPlanPB || 0).toLocaleString()} ៛</td>
+          <td class="bg-calc">${Number(finance.budgetReceivedPB || 0).toLocaleString()} ៛</td>
+          <td class="bg-calc">${Number(finance.budgetExpendedPB || 0).toLocaleString()} ៛</td>
+          <td class="bg-calc">${budgetBalance.toLocaleString()} ៛</td>
+          <td>${formatPct(finance.budgetExpendedPB, finance.budgetReceivedPB || 1)}</td>
+          <td>${budgetBalance >= 0 ? 'សមតុល្យវិជ្ជមាន' : 'លើសចំណាយ'}</td>
+        </tr>
+        <tr>
+          <th colspan="2">ចំណាយសម្ភារៈឧបទេសបង្រៀន</th>
+          <th colspan="2">ចំណាយជួសជុល និងកែលម្អ</th>
+          <th colspan="2">ចំណាយអនាម័យ និងសុខភាព</th>
+        </tr>
+        <tr>
+          <td colspan="2">${Number(finance.materialsExpended || 0).toLocaleString()} ៛</td>
+          <td colspan="2">${Number(finance.repairsExpended || 0).toLocaleString()} ៛</td>
+          <td colspan="2">${Number(finance.hygieneExpended || 0).toLocaleString()} ៛</td>
+        </tr>
+      </table>
+
+      <!-- Signatures -->
+      <table style="border: none; margin-top: 30px;">
+        <tr style="border: none;">
+          <td style="border: none; width: 33%; text-align: center;">
+            <div>បានឃើញ និងពិនិត្យត្រឹមត្រូវ</div>
+            <div><strong>នាយករងសាលា</strong></div>
+          </td>
+          <td style="border: none; width: 34%; text-align: center;">
+            <div>អ្នកធ្វើរបាយការណ៍</div>
+            <div><strong>មន្ត្រីស្ថិតិ / រដ្ឋបាល</strong></div>
+          </td>
+          <td style="border: none; width: 33%; text-align: center;">
+            <div>${meta.reportDate || 'ថ្ងៃទី..... ខែ..... ឆ្នាំ២០២៥'}</div>
+            <div>បានឃើញ និងឯកភាព</div>
+            <div><strong>នាយកសាលាបឋមសិក្សា</strong></div>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  const blob = new Blob(['\ufeff', html], {
+    type: 'application/vnd.ms-excel;charset=utf-8',
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `ផ្នែក_B_ស្ថិតិឯកទេស_${meta.schoolName || 'សាលារៀន'}_${meta.academicYear.replace(/\s+/g, '')}.xls`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
