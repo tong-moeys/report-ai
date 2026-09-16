@@ -1,11 +1,11 @@
 import { StaffMember, ClassGradebook, SchoolMeta } from '../types';
 
 export const rotSchoolMeta: SchoolMeta = {
-  schoolName: 'សាលាបឋមសិក្សា រោត',
+  schoolName: 'សាលាបឋមសិក្សា រោគ',
   clusterOrDistrict: 'កម្រង ស្ពានស្រែង • ការិយាល័យអប់រំ យុវជន និងកីឡា នៃរដ្ឋបាលស្រុកភ្នំស្រុក',
   province: 'ខេត្តបន្ទាយមានជ័យ',
   academicYear: '២០២៥-២០២៦',
-  directorName: 'សួន ណាប៉ែន',
+  directorName: 'សុខ សារើន',
   preparedByName: 'អ៊ុន ប៊ុនធួន',
   reportDate: '២០២៦-០៣-២១',
 };
@@ -13,9 +13,9 @@ export const rotSchoolMeta: SchoolMeta = {
 // បញ្ជីរាយនាមបុគ្គលិក ១៧ នាក់ (Page 7 នៃឯកសារ)
 export const initialStaffList: StaffMember[] = [
   // I - បុគ្គលិកចាត់តាំង
-  { id: 's1', no: 1, name: 'សួន ណាប៉ែន', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'ថ្នាក់ទី១២', roleOrClass: 'នាយិកាសាលា', shift: 'ព្រឹក', phone: '089 663 966', category: 'admin' },
+  { id: 's1', no: 1, name: 'សុខ សារើន ', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'ថ្នាក់ទី១២', roleOrClass: 'នាយិកាសាលា', shift: 'ព្រឹក', phone: '089 663 966', category: 'admin' },
   { id: 's2', no: 2, name: 'យ៉េន ណាវី', gender: 'ប', qualification: 'គ្រូបឋម', educationLevel: 'ថ្នាក់ទី១២', roleOrClass: 'នាយករង', shift: 'ព្រឹក', phone: '086 246 698', category: 'admin' },
-  { id: 's3', no: 3, name: 'អ៊ុន ប៊ុនធួន', gender: 'ប', qualification: 'គ្រូបឋម', educationLevel: 'ស.បច្ចេកទេស', roleOrClass: 'លេខាធិការ', shift: 'ព្រឹក', phone: '092 272 005', category: 'admin' },
+  { id: 's3', no: 3, name: 'អ៊ុន ប៊ុនទុង ',gender: 'ប', qualification: 'គ្រូបឋម', educationLevel: 'ស.បច្ចេកទេស', roleOrClass: 'លេខាធិការ', shift: 'ព្រឹក', phone: '092 272 005', category: 'admin' },
   // II - បុគ្គលិកបង្រៀន
   { id: 's4', no: 4, name: 'ជែម សុភក្តិ', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'ស.ទុតិយភូមិ', roleOrClass: '1A', studentsTotal: 31, studentsFemale: 15, shift: 'ព្រឹក', phone: '088 343 5566', category: 'teaching' },
   { id: 's5', no: 5, name: 'ឡាង ម៉ារ៉ាដ្យែ', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'ស.បឋមភូមិ', roleOrClass: '5A', studentsTotal: 25, studentsFemale: 12, shift: 'ព្រឹក', phone: '097 685 8898', category: 'teaching' },
