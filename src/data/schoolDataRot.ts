@@ -2,7 +2,7 @@ import { StaffMember, ClassGradebook, SchoolMeta } from '../types';
 
 export const rotSchoolMeta: SchoolMeta = {
   schoolName: 'សាលាបឋមសិក្សា រោគ',
-  clusterOrDistrict: 'កម្រង ស្ពានស្រែង • ការិយាល័យអប់រំ យុវជន និងកីឡា នៃរដ្ឋបាលស្រុកភ្នំស្រុក',
+  clusterOrDistrict: 'កម្រងស្ពានស្រែង • ការិយាល័យអប់រំ យុវជន និងកីឡា នៃរដ្ឋបាលស្រុកភ្នំស្រុក',
   province: 'ខេត្តបន្ទាយមានជ័យ',
   academicYear: '២០២៥-២០២៦',
   directorName: 'សុខ សារើន',
@@ -14,24 +14,24 @@ export const rotSchoolMeta: SchoolMeta = {
 export const initialStaffList: StaffMember[] = [
   // I - បុគ្គលិកចាត់តាំង
   { id: 's1', no: 1, name: 'សុខ សារើន ', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'ថ្នាក់ទី១២', roleOrClass: 'នាយិកាសាលា', shift: 'ព្រឹក', phone: '089 663 966', category: 'admin' },
-  { id: 's2', no: 2, name: 'យ៉េន ណាវី', gender: 'ប', qualification: 'គ្រូបឋម', educationLevel: 'ថ្នាក់ទី១២', roleOrClass: 'នាយករង', shift: 'ព្រឹក', phone: '086 246 698', category: 'admin' },
-  { id: 's3', no: 3, name: 'អ៊ុន ប៊ុនទុង ',gender: 'ប', qualification: 'គ្រូបឋម', educationLevel: 'ស.បច្ចេកទេស', roleOrClass: 'លេខាធិការ', shift: 'ព្រឹក', phone: '092 272 005', category: 'admin' },
+  { id: 's2', no: 2, name: 'យ៉េន សាវី', gender: 'ប', qualification: 'គ្រូបឋម', educationLevel: 'ថ្នាក់ទី១២', roleOrClass: 'នាយករង', shift: 'ព្រឹក', phone: '086 246 698', category: 'admin' },
+  { id: 's3', no: 3, name: 'អ៊ុន ប៊ុនទុង ',gender: 'ប', qualification: 'គ្រូបឋម', educationLevel: 'បរិញ្ញាបត្រ', roleOrClass: 'លេខាធិការ', shift: 'ព្រឹក', phone: '092 272 005', category: 'admin' },
   // II - បុគ្គលិកបង្រៀន
-  { id: 's4', no: 4, name: 'ជែម សុភក្តិ', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'ស.ទុតិយភូមិ', roleOrClass: '1A', studentsTotal: 31, studentsFemale: 15, shift: 'ព្រឹក', phone: '088 343 5566', category: 'teaching' },
-  { id: 's5', no: 5, name: 'ឡាង ម៉ារ៉ាដ្យែ', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'ស.បឋមភូមិ', roleOrClass: '5A', studentsTotal: 25, studentsFemale: 12, shift: 'ព្រឹក', phone: '097 685 8898', category: 'teaching' },
-  { id: 's6', no: 6, name: 'ចោម ស្រីពេជ្រ', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'ស.ទុតិយភូមិ', roleOrClass: '2A', studentsTotal: 22, studentsFemale: 11, shift: 'ព្រឹក', phone: '088 930 4103', category: 'teaching' },
-  { id: 's7', no: 7, name: 'លេង ចាន់ណារ', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'ស.ទុតិយភូមិ', roleOrClass: '2B', studentsTotal: 22, studentsFemale: 10, shift: 'ព្រឹក', phone: '088 466 1856', category: 'teaching' },
-  { id: 's8', no: 8, name: 'អេង ផល្លាន', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'ស.បឋមភូមិ', roleOrClass: '3B', studentsTotal: 20, studentsFemale: 10, shift: 'ព្រឹក', phone: '092 620 771', category: 'teaching' },
-  { id: 's9', no: 9, name: 'ប៊ូ ពិសី', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'ស.ទុតិយភូមិ', roleOrClass: '3A', studentsTotal: 20, studentsFemale: 11, shift: 'ព្រឹក', phone: '097 933 9499', category: 'teaching' },
-  { id: 's10', no: 10, name: 'ខេន សាវ៉ា', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'ស.បឋមភូមិ', roleOrClass: '4A', studentsTotal: 25, studentsFemale: 11, shift: 'ព្រឹក', phone: '097 461 1580', category: 'teaching' },
-  { id: 's11', no: 11, name: 'អៀន សុខឿប', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'ស.បឋមភូមិ', roleOrClass: '4B', studentsTotal: 24, studentsFemale: 11, shift: 'ព្រឹក', phone: '097 707 5979', category: 'teaching' },
-  { id: 's12', no: 12, name: 'យ៉ែម សម្បូរស្បៃ', gender: 'ប', qualification: 'គ្រូបឋម', educationLevel: 'ស.ទុតិយភូមិ', roleOrClass: '5B', studentsTotal: 25, studentsFemale: 12, shift: 'ព្រឹក', phone: '031 423 4466', category: 'teaching' },
-  { id: 's13', no: 13, name: 'ឈួន សេរីរ៉ុម', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'ស.បឋមភូមិ', roleOrClass: '6A', studentsTotal: 35, studentsFemale: 17, shift: 'ព្រឹក', phone: '097 670 0999', category: 'teaching' },
+  { id: 's4', no: 4, name: 'រ៉ែម សុភក្តិ', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'ស.ទុតិយភូមិ', roleOrClass: '1A', studentsTotal: 31, studentsFemale: 15, shift: 'ព្រឹក', phone: '088 343 5566', category: 'teaching' },
+  { id: 's5', no: 5, name: 'ស្វាង មនោរម្យ', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'បរិញ្ញាបត្រ', roleOrClass: '5A', studentsTotal: 25, studentsFemale: 12, shift: 'ព្រឹក', phone: '097 685 8898', category: 'teaching' },
+  { id: 's6', no: 6, name: 'ប៉ោង ស្រីពេជ្រ', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'ស.ទុតិយភូមិ', roleOrClass: '2A', studentsTotal: 22, studentsFemale: 11, shift: 'ព្រឹក', phone: '088 930 4103', category: 'teaching' },
+  { id: 's7', no: 7, name: 'លេង ចាន់នាវ', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'ស.ទុតិយភូមិ', roleOrClass: '2B', studentsTotal: 22, studentsFemale: 10, shift: 'ព្រឹក', phone: '088 466 1856', category: 'teaching' },
+  { id: 's8', no: 8, name: 'អេង ផល្លែន', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'បរិញ្ញាបត្រ', roleOrClass: '3B', studentsTotal: 20, studentsFemale: 10, shift: 'ព្រឹក', phone: '092 620 771', category: 'teaching' },
+  { id: 's9', no: 9, name: 'ប៊ី ពិសី', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'ស.ទុតិយភូមិ', roleOrClass: '3A', studentsTotal: 20, studentsFemale: 11, shift: 'ព្រឹក', phone: '097 933 9499', category: 'teaching' },
+  { id: 's10', no: 10, name: 'ឆេន សាវដា', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'បរិញ្ញាបត្រ', roleOrClass: '4A', studentsTotal: 25, studentsFemale: 11, shift: 'ព្រឹក', phone: '097 461 1580', category: 'teaching' },
+  { id: 's11', no: 11, name: 'អឿន សុខៀប', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'បរិញ្ញាបត្រ', roleOrClass: '4B', studentsTotal: 24, studentsFemale: 11, shift: 'ព្រឹក', phone: '097 707 5979', category: 'teaching' },
+  { id: 's12', no: 12, name: 'រ៉ោម សម្ផស្ស', gender: 'ប', qualification: 'គ្រូបឋម', educationLevel: 'ស.ទុតិយភូមិ', roleOrClass: '5B', studentsTotal: 25, studentsFemale: 12, shift: 'ព្រឹក', phone: '031 423 4466', category: 'teaching' },
+  { id: 's13', no: 13, name: 'ឈួត សេរ៉ូម', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'បរិញ្ញាបត្រ', roleOrClass: '6A', studentsTotal: 35, studentsFemale: 17, shift: 'ព្រឹក', phone: '097 670 0999', category: 'teaching' },
   { id: 's14', no: 14, name: 'កែវ ខន', gender: 'ប', qualification: 'គ្រូបឋម', educationLevel: 'ថ្នាក់ទី១២', roleOrClass: 'កសិកម្ម', shift: 'ព្រឹក', phone: '090 887 118', category: 'teaching' },
   { id: 's15', no: 15, name: 'លន់ ចាន់នីក', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'ស.ទុតិយភូមិ', roleOrClass: 'បណ្ណារក្ស', shift: 'ព្រឹក', phone: '097 242 4423', category: 'teaching' },
   // មត្តេយ្យ
-  { id: 's16', no: 16, name: 'បាន ណាក់', gender: 'ស', qualification: 'គ្រូមត្តេយ្យ', educationLevel: 'ស.បឋមភូមិ', roleOrClass: 'ម.វត្តខ្ពស់', studentsTotal: 35, studentsFemale: 20, shift: 'ព្រឹក', phone: '0978 680 864', category: 'kindergarten' },
-  { id: 's17', no: 17, name: 'ឡុក ម៉ាក់ឌី', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'ស.ទុតិយភូមិ', roleOrClass: 'ម.កាច់រទេះ', studentsTotal: 40, studentsFemale: 25, shift: 'ព្រឹក', phone: '0886 534 343', category: 'kindergarten' },
+  { id: 's16', no: 16, name: 'ពាន ណូរ៉ា', gender: 'ស', qualification: 'គ្រូមត្តេយ្យ', educationLevel: 'បរិញ្ញាបត្រ', roleOrClass: 'ម.តខ្ពស់', studentsTotal: 35, studentsFemale: 20, shift: 'ព្រឹក', phone: '0978 680 864', category: 'kindergarten' },
+  { id: 's17', no: 17, name: 'ឡុក ម៉ាក់តី', gender: 'ស', qualification: 'គ្រូបឋម', educationLevel: 'ស.ទុតិយភូមិ', roleOrClass: 'ម.តទាប', studentsTotal: 40, studentsFemale: 25, shift: 'ព្រឹក', phone: '0886 534 343', category: 'kindergarten' },
 ];
 
 // ទិន្នន័យគំរូសៀវភៅចំណាត់ថ្នាក់តាមថ្នាក់ទាំង ១០ (Pages 12-21)

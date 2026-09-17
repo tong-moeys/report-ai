@@ -661,7 +661,7 @@ export function exportPartBToExcel(
           <td style="border: none; width: 33%; text-align: center;">
             <div>${meta.reportDate || 'ថ្ងៃទី..... ខែ..... ឆ្នាំ២០២៥'}</div>
             <div>បានឃើញ និងឯកភាព</div>
-            <div><strong>នាយកសាលាបឋមសិក្សា</strong></div>
+            <div><strong>នាយកសាលា</strong></div>
           </td>
         </tr>
       </table>

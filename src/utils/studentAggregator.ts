@@ -383,16 +383,16 @@ export function aggregateStudentsToSchoolData(
   // 6. Build updated Class Gradebooks (10 classes booklet)
   // Preserve existing teachers or defaults
   const teacherMap: Record<string, string> = {
-    '1A': 'ជែម សុភក្តិ',
-    '2A': 'ចោម ស្រីពេជ្រ',
-    '2B': 'លេង ចាន់ណារ',
-    '3A': 'ប៊ូ ពិសី',
-    '3B': 'អេង ផល្លាន',
-    '4A': 'ខេន សាវ៉ា',
-    '4B': 'អៀន សុខឿប',
-    '5A': 'ឡាង ម៉ារ៉ាដ្យែ',
-    '5B': 'យ៉ែម សម្បូរស្បៃ',
-    '6A': 'ឈួន សេរីរ៉ុម',
+    '1A': 'រ៉ែម សុភក្តិ',
+    '2A': 'ប៉ោង ស្រីពេជ្រ',
+    '2B': 'លេង ចាន់លារ',
+    '3A': 'ប៊ី ពិសី',
+    '3B': 'អេង ផល្លែន',
+    '4A': 'ឆេន សាវដា',
+    '4B': 'អឿន សុខៀប',
+    '5A': 'ស្វាង​មនោរម្យ',
+    '5B': 'រ៉ោម សម្ផស្ស',
+    '6A': 'ឈួត សេរ៉ូម',
   };
 
   currentGradebooks.forEach((gb) => {

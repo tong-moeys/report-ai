@@ -112,11 +112,11 @@ export const ClassGradebooksView: React.FC<ClassGradebooksViewProps> = ({
 
   // Helper for computing letter grade from average
   const computeGradeLetter = (avg: number): 'A' | 'B' | 'C' | 'D' | 'E' | 'F' => {
-    if (avg >= 8.5) return 'A';
+    if (avg >= 9.0) return 'A';
     if (avg >= 8.0) return 'B';
-    if (avg >= 6.5) return 'C';
-    if (avg >= 5.0) return 'D';
-    if (avg >= 4.0) return 'E';
+    if (avg >= 7.0) return 'C';
+    if (avg >= 6.0) return 'D';
+    if (avg >= 5.0) return 'E';
     return 'F';
   };
 

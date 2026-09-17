@@ -16,11 +16,11 @@ import {
 } from '../types';
 
 export const initialSchoolMeta: SchoolMeta = {
-  schoolName: 'បស.រោគ',
-  clusterOrDistrict: 'ស្រុក/ក្រុង...',
+  schoolName: 'សាលាបឋមសិក្សា រោគ',
+  clusterOrDistrict: 'ស្រុក/ក្រុងភ្នំស្រុក',
   province: 'ខេត្ត...',
-  academicYear: '២០២៣ - ២០២៤',
-  directorName: 'លោកនាយកសាលា',
+  academicYear: '២០២៥ - ២០២៦',
+  directorName: 'នាយកសាលា',
   preparedByName: 'អ្នករៀបចំរបាយការណ៍',
   reportDate: new Date().toISOString().split('T')[0],
 };
