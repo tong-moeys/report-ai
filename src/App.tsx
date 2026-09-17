@@ -20,6 +20,7 @@ import {
   ReportVersionHistoryItem,
   UserRole,
   StudentScoreRow,
+  FailedStudentRecord,
 } from './types';
 import {
   initialSchoolMeta,
@@ -34,6 +35,7 @@ import {
   initialHealthSocialData,
   initialSchoolFinanceData,
   initialMasterReportNarrative,
+  initialFailedStudents,
 } from './data/initialData';
 import { initialStaffList, initialClassGradebooks } from './data/schoolDataRot';
 import { sampleDetailedStudents } from './data/sampleDetailedStudents';
@@ -45,6 +47,7 @@ import { Table1StaffView } from './components/Table1Staff';
 import { Table2AcademicResultsView } from './components/Table2AcademicResults';
 import { Table3FailedStatsView } from './components/Table3FailedStats';
 import { Table4YearEndResultsView } from './components/Table4YearEndResults';
+import { TableFailedStudentsNominalRoll } from './components/TableFailedStudentsNominalRoll';
 import { ReportSignatures } from './components/ReportSignatures';
 import { PartBView } from './components/PartBView';
 import { OfficialMasterReport } from './components/OfficialMasterReport';
@@ -89,6 +92,7 @@ const STORAGE_KEYS = {
   STAFF_LIST: 'kh_school_stat_staff_list',
   GRADEBOOKS: 'kh_school_stat_gradebooks',
   DETAILED_STUDENTS: 'kh_school_stat_detailed_students',
+  FAILED_STUDENTS: 'kh_school_stat_failed_students',
 };
 
 export default function App() {
@@ -249,11 +253,21 @@ export default function App() {
     }
   });
 
+  // Failed Students Detailed Nominal Roll (0.00-4.99 and 4.00-4.99)
+  const [failedStudents, setFailedStudents] = useState<FailedStudentRecord[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.FAILED_STUDENTS);
+      return saved ? JSON.parse(saved) : initialFailedStudents;
+    } catch {
+      return initialFailedStudents;
+    }
+  });
+
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isAiMoeysModalOpen, setIsAiMoeysModalOpen] = useState(false);
 
   // UI state
-  const [activeTab, setActiveTab] = useState<'all' | 't1' | 't1_staff' | 't2' | 't3' | 't4'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 't1' | 't1_staff' | 't2' | 't3' | 't4' | 'failed_students'>('all');
   const [showFormulas, setShowFormulas] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -294,6 +308,7 @@ export default function App() {
     staffList,
     gradebooks,
     detailedStudents,
+    failedStudents,
   });
 
   // Helper to apply snapshot to state
@@ -314,6 +329,7 @@ export default function App() {
     if (snap.staffList) setStaffList(snap.staffList);
     if (snap.gradebooks) setGradebooks(snap.gradebooks);
     if (snap.detailedStudents) setDetailedStudents(snap.detailedStudents);
+    if (snap.failedStudents) setFailedStudents(snap.failedStudents);
   };
 
   // Listen to Firebase Auth state & sync latest Cloud Firestore state on load
@@ -507,6 +523,7 @@ export default function App() {
       localStorage.setItem(STORAGE_KEYS.STAFF_LIST, JSON.stringify(staffList));
       localStorage.setItem(STORAGE_KEYS.GRADEBOOKS, JSON.stringify(gradebooks));
       localStorage.setItem(STORAGE_KEYS.DETAILED_STUDENTS, JSON.stringify(detailedStudents));
+      localStorage.setItem(STORAGE_KEYS.FAILED_STUDENTS, JSON.stringify(failedStudents));
     } catch {
       // ignore storage write errors
     }
@@ -527,6 +544,7 @@ export default function App() {
     staffList,
     gradebooks,
     detailedStudents,
+    failedStudents,
   ]);
 
   // Keep school names in sync when modified in metadata
@@ -620,6 +638,9 @@ export default function App() {
       setFinance(initialSchoolFinanceData);
       setNarrative(initialMasterReportNarrative);
       setDetailedStudents(sampleDetailedStudents);
+      setFailedStudents(initialFailedStudents);
+      setStaffList(initialStaffList);
+      setGradebooks(initialClassGradebooks);
       showToast('បានកំណត់ទិន្នន័យដើមឡើងវិញរួចរាល់!');
     }
   };
@@ -857,6 +878,19 @@ export default function App() {
                 </section>
               )}
 
+              {/* Table: Detailed Nominal Roll of Failed Students (0.00-4.99 and 4.00-4.99) */}
+              {(activeTab === 'all' || activeTab === 'failed_students') && (
+                <section id="section-failed-students-roll" className="scroll-mt-24">
+                  <TableFailedStudentsNominalRoll
+                    students={failedStudents}
+                    onChange={setFailedStudents}
+                    meta={meta}
+                    gradebooks={gradebooks}
+                    detailedStudents={detailedStudents}
+                  />
+                </section>
+              )}
+
               {/* Official Signatures Block */}
               <ReportSignatures meta={meta} />
 
@@ -1033,6 +1067,7 @@ export default function App() {
             <ClassGradebooksView
               meta={meta}
               gradebooks={gradebooks}
+              staffList={staffList}
               onUpdateGradebooks={setGradebooks}
               onOpenImportModal={() => setIsImportModalOpen(true)}
               onNavigateToDetailedResults={() => {
@@ -1138,9 +1173,11 @@ export default function App() {
             narrative={narrative}
             staffList={staffList}
             gradebooks={gradebooks}
+            failedStudents={failedStudents}
             onChangeNarrative={setNarrative}
             onUpdateStaffList={setStaffList}
             onUpdateGradebooks={setGradebooks}
+            onUpdateFailedStudents={setFailedStudents}
             onExportExcel={handleExportExcel}
           />
         )}

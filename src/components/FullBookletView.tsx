@@ -14,12 +14,14 @@ import {
   MasterReportNarrative,
   StaffMember,
   ClassGradebook,
+  FailedStudentRecord,
 } from '../types';
 import { Table1SchoolRoomsView } from './Table1SchoolRooms';
 import { Table1StaffView } from './Table1Staff';
 import { Table2AcademicResultsView } from './Table2AcademicResults';
 import { Table3FailedStatsView } from './Table3FailedStats';
 import { Table4YearEndResultsView } from './Table4YearEndResults';
+import { TableFailedStudentsNominalRoll } from './TableFailedStudentsNominalRoll';
 import { StaffNominalRoll } from './StaffNominalRoll';
 import { ClassGradebooksView } from './ClassGradebooksView';
 import { PartBView } from './PartBView';
@@ -43,9 +45,11 @@ interface FullBookletViewProps {
   narrative: MasterReportNarrative;
   staffList: StaffMember[];
   gradebooks: ClassGradebook[];
+  failedStudents?: FailedStudentRecord[];
   onChangeNarrative: (n: MasterReportNarrative) => void;
   onUpdateStaffList: (l: StaffMember[]) => void;
   onUpdateGradebooks: (g: ClassGradebook[]) => void;
+  onUpdateFailedStudents?: (students: FailedStudentRecord[]) => void;
   onExportExcel: () => void;
 }
 
@@ -202,6 +206,7 @@ export const FullBookletView: React.FC<FullBookletViewProps> = (props) => {
           <ClassGradebooksView
             meta={props.meta}
             gradebooks={props.gradebooks}
+            staffList={props.staffList}
             onUpdateGradebooks={props.onUpdateGradebooks}
             showAllClassesForPrint={true}
           />
@@ -224,6 +229,16 @@ export const FullBookletView: React.FC<FullBookletViewProps> = (props) => {
             headerConfig={props.t4HeaderConfig}
             onUpdateHeaderConfig={() => {}}
           />
+          {props.failedStudents && (
+            <div className="mt-8">
+              <TableFailedStudentsNominalRoll
+                students={props.failedStudents}
+                onChange={props.onUpdateFailedStudents || (() => {})}
+                meta={props.meta}
+                gradebooks={props.gradebooks}
+              />
+            </div>
+          )}
         </section>
       </div>
     </div>

@@ -25,8 +25,8 @@ interface HeaderProps {
   onToggleFormulas: () => void;
   mainSection: MainAppSection;
   setMainSection: (section: MainAppSection) => void;
-  activeTab: 'all' | 't1' | 't1_staff' | 't2' | 't3' | 't4';
-  setActiveTab: (tab: 'all' | 't1' | 't1_staff' | 't2' | 't3' | 't4') => void;
+  activeTab: 'all' | 't1' | 't1_staff' | 't2' | 't3' | 't4' | 'failed_students';
+  setActiveTab: (tab: 'all' | 't1' | 't1_staff' | 't2' | 't3' | 't4' | 'failed_students') => void;
   currentUser: AppUser | null;
   onOpenAuthModal: () => void;
   onOpenHistoryModal: () => void;
@@ -385,6 +385,17 @@ export const Header: React.FC<HeaderProps> = ({
                 }`}
               >
                 ៤. ចុងឆ្នាំ
+              </button>
+              <button
+                id="tab-view-failed-students"
+                onClick={() => setActiveTab('failed_students')}
+                className={`px-2 py-1 rounded-md font-semibold whitespace-nowrap transition-colors cursor-pointer flex items-center gap-1 ${
+                  activeTab === 'failed_students'
+                    ? 'bg-rose-700 text-white shadow-2xs'
+                    : 'bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100'
+                }`}
+              >
+                <span>បញ្ជីសិស្សធ្លាក់ (០-៤.៩៩)</span>
               </button>
             </div>
           ) : mainSection === 'part_b' ? (

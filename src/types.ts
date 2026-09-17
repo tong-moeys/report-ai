@@ -94,6 +94,20 @@ export interface Table4HeaderConfig {
   col2Title: string;
 }
 
+// តារាងបញ្ជីរាយនាមសិស្សធ្លាក់មធ្យមភាគ ០.០០-៤.៩៩ (និង ៤.០០-៤.៩៩)
+export interface FailedStudentRecord {
+  id: string;
+  no?: number;
+  gradeClass: string;       // ថ្នាក់ ឧ. "ថ្នាក់ទី 1A", "ថ្នាក់ទី 2A", "ថ្នាក់ទី 3B"...
+  name: string;             // គោត្តនាម-នាម
+  gender: 'ស្រី' | 'ប្រុស' | 'ស' | 'ប'; // ភេទ
+  dob: string;              // ថ្ងៃខែឆ្នាំកំណើត
+  sem1Avg: number;          // មធ្យមភាគ ឆមាស១
+  sem2Avg: number;          // មធ្យមភាគ ឆមាស២
+  yearAvg: number;          // មធ្យមភាគ ដំណាច់ឆ្នាំ
+  remarks: string;          // សេចក្ដីបញ្ជាក់
+}
+
 // ==========================================
 // ផ្នែក B (ស្ថិតិឯកទេស & សង្គម)
 // ==========================================
@@ -318,6 +332,7 @@ export interface ReportSnapshotData {
   staffList: StaffMember[];
   gradebooks: ClassGradebook[];
   detailedStudents?: StudentScoreRow[];
+  failedStudents?: FailedStudentRecord[];
 }
 
 export interface ReportVersionHistoryItem {
