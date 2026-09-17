@@ -205,27 +205,75 @@ export const TableFailedStudentsNominalRoll: React.FC<Props> = ({
     }
   };
 
-  // Sync / Scan all failed students from Gradebooks and Detailed Students
-  const handleSyncFromGradebooks = () => {
+  // Sync / Scan all failed students from Detailed Students & Gradebooks
+  const handleSyncFromGradebooks = (replaceMode = false) => {
     const found: FailedStudentRecord[] = [];
     const seenNames = new Set<string>();
 
-    // 1. Scan from gradebooks
+    // 1. Scan from detailedStudents first (highest fidelity)
+    detailedStudents.forEach((st) => {
+      // Exclude dropouts
+      if (st.isDropped || (st.status && st.status.includes('បោះបង់'))) {
+        return;
+      }
+      const yAvg =
+        typeof st.yearAvg === 'number' && !isNaN(st.yearAvg)
+          ? st.yearAvg
+          : st.annualSem1 && st.annualSem2
+          ? (st.annualSem1 + st.annualSem2) / 2
+          : ((st.sem1Avg || 0) + (st.sem2Avg || 0)) / 2;
+
+      if (yAvg < 5.0 && st.name && st.name.trim()) {
+        let gName = st.gradeClass?.trim() || '1A';
+        if (!gName.startsWith('ថ្នាក់ទី')) {
+          gName = `ថ្នាក់ទី ${gName.replace('-', '')}`;
+        }
+        const key = `${st.name.trim()}-${gName}`;
+        if (!seenNames.has(key)) {
+          seenNames.add(key);
+          found.push({
+            id: `dt-fail-${st.id || Math.random().toString(36).substring(2, 9)}`,
+            gradeClass: gName,
+            name: st.name.trim(),
+            gender: (st.gender === 'ស' || st.gender === 'ស្រី') ? 'ស្រី' : 'ប្រុស',
+            dob: st.dob || '',
+            sem1Avg: typeof st.sem1Avg === 'number' ? Number(st.sem1Avg.toFixed(2)) : 0,
+            sem2Avg: typeof st.sem2Avg === 'number' ? Number(st.sem2Avg.toFixed(2)) : 0,
+            yearAvg: Number(yAvg.toFixed(2)),
+            remarks:
+              yAvg >= 4.0
+                ? 'ត្រៀមប្រឡងសង (ម.ភាគ ៤.០០-៤.៩៩)'
+                : 'ត្រួតថ្នាក់ (ម.ភាគ < ៤.០០)',
+          });
+        }
+      }
+    });
+
+    // 2. Scan from gradebooks
     gradebooks.forEach((gb) => {
       gb.students.forEach((st) => {
-        const yAvg = st.yearAvg ?? ((st.sem1Avg + st.sem2Avg) / 2);
-        if (yAvg < 5.0 && st.name) {
-          const key = `${st.name}-${gb.gradeName}`;
+        if (st.isDropped || (st.status && st.status.includes('បោះបង់'))) {
+          return;
+        }
+        const yAvg =
+          typeof st.yearAvg === 'number' && !isNaN(st.yearAvg)
+            ? st.yearAvg
+            : st.annualSem1 && st.annualSem2
+            ? (st.annualSem1 + st.annualSem2) / 2
+            : ((st.sem1Avg || 0) + (st.sem2Avg || 0)) / 2;
+
+        if (yAvg < 5.0 && st.name && st.name.trim()) {
+          const key = `${st.name.trim()}-${gb.gradeName}`;
           if (!seenNames.has(key)) {
             seenNames.add(key);
             found.push({
-              id: `gb-fail-${st.id || Math.random()}`,
+              id: `gb-fail-${st.id || Math.random().toString(36).substring(2, 9)}`,
               gradeClass: gb.gradeName,
-              name: st.name,
+              name: st.name.trim(),
               gender: (st.gender === 'ស' || st.gender === 'ស្រី') ? 'ស្រី' : 'ប្រុស',
               dob: st.dob || '',
-              sem1Avg: st.sem1Avg || 0,
-              sem2Avg: st.sem2Avg || 0,
+              sem1Avg: typeof st.sem1Avg === 'number' ? Number(st.sem1Avg.toFixed(2)) : 0,
+              sem2Avg: typeof st.sem2Avg === 'number' ? Number(st.sem2Avg.toFixed(2)) : 0,
               yearAvg: Number(yAvg.toFixed(2)),
               remarks:
                 yAvg >= 4.0
@@ -237,36 +285,15 @@ export const TableFailedStudentsNominalRoll: React.FC<Props> = ({
       });
     });
 
-    // 2. Scan from detailedStudents
-    detailedStudents.forEach((st) => {
-      const yAvg = st.yearAvg ?? ((st.sem1Avg + st.sem2Avg) / 2);
-      if (yAvg < 5.0 && st.name) {
-        const gName = st.gradeClass?.startsWith('ថ្នាក់ទី')
-          ? st.gradeClass
-          : `ថ្នាក់ទី ${st.gradeClass || '1A'}`;
-        const key = `${st.name}-${gName}`;
-        if (!seenNames.has(key)) {
-          seenNames.add(key);
-          found.push({
-            id: `dt-fail-${st.id || Math.random()}`,
-            gradeClass: gName,
-            name: st.name,
-            gender: (st.gender === 'ស' || st.gender === 'ស្រី') ? 'ស្រី' : 'ប្រុស',
-            dob: st.dob || '',
-            sem1Avg: st.sem1Avg || 0,
-            sem2Avg: st.sem2Avg || 0,
-            yearAvg: Number(yAvg.toFixed(2)),
-            remarks:
-              yAvg >= 4.0
-                ? 'ត្រៀមប្រឡងសង (ម.ភាគ ៤.០០-៤.៩៩)'
-                : 'ត្រួតថ្នាក់ (ម.ភាគ < ៤.០០)',
-          });
-        }
-      }
-    });
-
     if (found.length === 0) {
-      alert('ពុំមានសិស្សធ្លាក់មធ្យមភាគ (< ៥.០០) បន្ថែមនៅក្នុងសៀវភៅចំណាត់ថ្នាក់ឡើយ។');
+      alert('ពុំមានសិស្សធ្លាក់មធ្យមភាគ (< ៥.០០) នៅក្នុងលទ្ធផលលម្អិត ឬសៀវភៅចំណាត់ថ្នាក់ឡើយ។');
+      return;
+    }
+
+    if (replaceMode) {
+      const indexed = found.map((s, idx) => ({ ...s, no: idx + 1 }));
+      onChange(indexed);
+      alert(`បានទាញយក និងធ្វើបច្ចុប្បន្នភាពសិស្សធ្លាក់ចំនួន ${toKhmerNum(found.length)} នាក់ពីលទ្ធផលលម្អិតដោយជោគជ័យ!`);
       return;
     }
 
@@ -279,7 +306,8 @@ export const TableFailedStudentsNominalRoll: React.FC<Props> = ({
       return;
     }
 
-    onChange([...students, ...newItems]);
+    const merged = [...students, ...newItems].map((s, idx) => ({ ...s, no: idx + 1 }));
+    onChange(merged);
     alert(`បានស្កេន និងទាញយកសិស្សធ្លាក់ចំនួន ${toKhmerNum(newItems.length)} នាក់បន្ថែមដោយជោគជ័យ!`);
   };
 
@@ -337,13 +365,13 @@ export const TableFailedStudentsNominalRoll: React.FC<Props> = ({
         {/* Action Buttons */}
         <div className="no-print flex items-center gap-2">
           <button
-            id="btn-sync-failed-gradebooks"
-            onClick={handleSyncFromGradebooks}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg text-xs font-medium transition-colors shadow-2xs cursor-pointer"
-            title="ទាញយកសិស្សធ្លាក់ដោយស្វ័យប្រវត្តិពីសៀវភៅចំណាត់ថ្នាក់"
+            id="btn-sync-failed-detailed"
+            onClick={() => handleSyncFromGradebooks(false)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+            title="ទាញយកទិន្នន័យសិស្សធ្លាក់ដោយស្វ័យប្រវត្តិពីលទ្ធផលលម្អិត និងសៀវភៅចំណាត់ថ្នាក់"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-blue-600" />
-            <span>ទាញពីសៀវភៅចំណាត់ថ្នាក់</span>
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>ទាញយកពីលទ្ធផលលម្អិត</span>
           </button>
 
           <button

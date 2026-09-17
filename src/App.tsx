@@ -674,6 +674,17 @@ export default function App() {
     setT4Rows(result.updatedT4Rows);
     setGradebooks(result.updatedGradebooks);
 
+    // Update or merge failed students from detailed students
+    if (result.extractedFailedStudents && result.extractedFailedStudents.length > 0) {
+      setFailedStudents((prev) => {
+        const existingKeys = new Set(prev.map((s) => `${s.name}-${s.gradeClass}`));
+        const newOnes = result.extractedFailedStudents.filter(
+          (s) => !existingKeys.has(`${s.name}-${s.gradeClass}`)
+        );
+        return [...prev, ...newOnes].map((s, idx) => ({ ...s, no: idx + 1 }));
+      });
+    }
+
     // Sync health deworming target
     const totalCount = result.summary.totalEnrolled;
     setHealthSocial((prev) => ({
@@ -719,6 +730,19 @@ export default function App() {
       setT3Rows(result.updatedT3Rows);
       setT4Rows(result.updatedT4Rows);
       setGradebooks(result.updatedGradebooks);
+
+      // Update failed students
+      if (result.extractedFailedStudents && result.extractedFailedStudents.length > 0) {
+        setFailedStudents((prev) => {
+          const base = mode === 'replace' ? [] : prev;
+          const existingKeys = new Set(base.map((s) => `${s.name}-${s.gradeClass}`));
+          const newOnes = result.extractedFailedStudents.filter(
+            (s) => !existingKeys.has(`${s.name}-${s.gradeClass}`)
+          );
+          return [...base, ...newOnes].map((s, idx) => ({ ...s, no: idx + 1 }));
+        });
+      }
+
       showToast(`បាននាំចូល និងគណនាស្វ័យប្រវត្តទៅរបាយការណ៍សាលាជោគជ័យ (${toKhmerNum(indexed.length)} នាក់)!`);
     } else {
       showToast(`បាននាំចូលទិន្នន័យសិស្ស ${toKhmerNum(importedStudents.length)} នាក់ជោគជ័យ!`);
@@ -1174,6 +1198,7 @@ export default function App() {
             staffList={staffList}
             gradebooks={gradebooks}
             failedStudents={failedStudents}
+            detailedStudents={detailedStudents}
             onChangeNarrative={setNarrative}
             onUpdateStaffList={setStaffList}
             onUpdateGradebooks={setGradebooks}

@@ -5,6 +5,7 @@ import {
   Table3RowInput,
   Table4RowInput,
   ClassGradebook,
+  FailedStudentRecord,
 } from '../types';
 
 export interface AggregationSummary {
@@ -460,12 +461,16 @@ export function aggregateStudentsToSchoolData(
 
   const classesList = Object.keys(classStudentsMap).filter((k) => classStudentsMap[k].length > 0);
 
+  // Extract failed students directly from detailed students dataset
+  const extractedFailedStudents: FailedStudentRecord[] = extractFailedStudentsFromDetailed(students);
+
   return {
     updatedT1Rooms,
     updatedT2Rows,
     updatedT3Rows,
     updatedT4Rows,
     updatedGradebooks,
+    extractedFailedStudents,
     summary: {
       totalEnrolled,
       totalEnrolledFemale,
@@ -486,4 +491,66 @@ export function aggregateStudentsToSchoolData(
       classesList,
     },
   };
+}
+
+/**
+ * Extracts failed student nominal records from detailed student rows.
+ * MoEYS standards:
+ * - Year average < 5.00
+ * - Categorizes into:
+ *   - 4.00 - 4.99: ត្រៀមប្រឡងសង (ម.ភាគ ៤.០០-៤.៩៩)
+ *   - < 4.00: ត្រួតថ្នាក់ (ម.ភាគ < ៤.០០)
+ */
+export function extractFailedStudentsFromDetailed(
+  students: StudentScoreRow[]
+): FailedStudentRecord[] {
+  const result: FailedStudentRecord[] = [];
+  const seenKeys = new Set<string>();
+
+  students.forEach((st) => {
+    // Only consider students who are active/tested or failed
+    if (st.isDropped || (st.status && st.status.includes('បោះបង់'))) {
+      return;
+    }
+
+    const yAvg =
+      typeof st.yearAvg === 'number' && !isNaN(st.yearAvg)
+        ? st.yearAvg
+        : st.annualSem1 && st.annualSem2
+        ? (st.annualSem1 + st.annualSem2) / 2
+        : ((st.sem1Avg || 0) + (st.sem2Avg || 0)) / 2;
+
+    if (yAvg < 5.0 && st.name && st.name.trim()) {
+      let gName = st.gradeClass?.trim() || '1A';
+      if (!gName.startsWith('ថ្នាក់ទី')) {
+        gName = `ថ្នាក់ទី ${gName.replace('-', '')}`;
+      }
+
+      const key = `${st.name.trim()}-${gName}`;
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key);
+
+        const isFem = st.gender === 'ស' || st.gender === 'ស្រី';
+        const genderKh: 'ស្រី' | 'ប្រុស' = isFem ? 'ស្រី' : 'ប្រុស';
+
+        result.push({
+          id: `dt-fail-${st.id || Math.random().toString(36).substring(2, 9)}`,
+          no: result.length + 1,
+          gradeClass: gName,
+          name: st.name.trim(),
+          gender: genderKh,
+          dob: st.dob || '',
+          sem1Avg: typeof st.sem1Avg === 'number' ? Number(st.sem1Avg.toFixed(2)) : 0,
+          sem2Avg: typeof st.sem2Avg === 'number' ? Number(st.sem2Avg.toFixed(2)) : 0,
+          yearAvg: Number(yAvg.toFixed(2)),
+          remarks:
+            yAvg >= 4.0
+              ? 'ត្រៀមប្រឡងសង (ម.ភាគ ៤.០០-៤.៩៩)'
+              : 'ត្រួតថ្នាក់ (ម.ភាគ < ៤.០០)',
+        });
+      }
+    }
+  });
+
+  return result;
 }

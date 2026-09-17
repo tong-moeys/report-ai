@@ -15,6 +15,7 @@ import {
   StaffMember,
   ClassGradebook,
   FailedStudentRecord,
+  StudentScoreRow,
 } from '../types';
 import { Table1SchoolRoomsView } from './Table1SchoolRooms';
 import { Table1StaffView } from './Table1Staff';
@@ -46,6 +47,7 @@ interface FullBookletViewProps {
   staffList: StaffMember[];
   gradebooks: ClassGradebook[];
   failedStudents?: FailedStudentRecord[];
+  detailedStudents?: StudentScoreRow[];
   onChangeNarrative: (n: MasterReportNarrative) => void;
   onUpdateStaffList: (l: StaffMember[]) => void;
   onUpdateGradebooks: (g: ClassGradebook[]) => void;
@@ -236,6 +238,7 @@ export const FullBookletView: React.FC<FullBookletViewProps> = (props) => {
                 onChange={props.onUpdateFailedStudents || (() => {})}
                 meta={props.meta}
                 gradebooks={props.gradebooks}
+                detailedStudents={props.detailedStudents}
               />
             </div>
           )}
